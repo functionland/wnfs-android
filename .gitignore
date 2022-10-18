@@ -1,0 +1,15 @@
+*.iml
+.idea
+.gradle
+/local.properties
+.DS_Store
+/build
+/buildSrc/build/
+*.class
+/captures
+.externalNativeBuild
+.cxx
+*.tab
+*.tab.values.at
+misc.xml
+target
