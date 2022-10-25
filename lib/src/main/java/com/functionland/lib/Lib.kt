@@ -1,8 +1,8 @@
 package com.functionland.lib;
 
-private external fun testWNFSNative(): Long?
+private external fun testWNFSNative(): String?
 
-fun testWNFS(): Long? {
+fun testWNFS(): String? {
    return testWNFSNative()
 }
 

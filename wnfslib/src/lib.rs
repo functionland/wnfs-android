@@ -20,7 +20,7 @@ pub mod android {
         android_logger::init_once(Config::default().with_min_level(Level::Trace));
     }
     #[no_mangle]
-    pub extern "C" fn Java_com_functionland_lib_testWNFSNative(
+    pub extern "C" fn Java_com_functionland_lib_LibKt_testWNFSNative(
         env: JNIEnv,
         _: JClass
     ) -> jstring {
