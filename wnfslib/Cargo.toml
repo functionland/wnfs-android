@@ -8,7 +8,8 @@ name = "wnfslib"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-wnfs = "0.1.7"
+wnfs = "=0.1.7"
+chrono = "0.4.22"
 crc32fast = "1.3.2"
 env_logger = "0.9.0"
 log = "0.4.14"

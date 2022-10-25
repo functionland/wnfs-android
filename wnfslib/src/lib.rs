@@ -8,26 +8,29 @@ pub mod android {
     use jni::sys::{jint, jobject, jstring, jboolean};
     use jni::JNIEnv;
     use log::{debug, trace, Level};
+    use wnfs::Id;
     use std::{fs::File, path::{Path}};
     extern crate android_logger;
     use android_logger::Config;
-    use image::EncodableLayout;
-    use url::Url;
-    use jni::signature::{JavaType, Primitive};
-    use wnfs::{PublicDirectory, Id};
+    use wnfs::public::PublicDirectory;
+    use chrono::Utc;
 
     #[no_mangle]
-    pub extern "C" fn Java_space_taran_wnfslib_LibKt_initRustLogger(_: JNIEnv, _: JClass) {
+    pub extern "C" fn Java_com_functionland_lib_LibKt_initRustLogger(_: JNIEnv, _: JClass) {
         android_logger::init_once(Config::default().with_min_level(Level::Trace));
     }
     #[no_mangle]
-    pub extern "C" fn Java_com_functionland_app_testWNFSNative(
+    pub extern "C" fn Java_com_functionland_lib_testWNFSNative(
         env: JNIEnv,
         _: JClass
-    ) -> jlong {
+    ) -> jstring {
         let dir = PublicDirectory::new(Utc::now());
-        trace!("id = {}", dir.get_id());
+        let dir_id = dir.get_id();
 
-        dir.get_id().into()
+        trace!("id = {}", dir_id);
+
+        env.new_string(dir_id)  
+            .expect("Couldn't create java string!")
+            .into_inner()
     }
 }
