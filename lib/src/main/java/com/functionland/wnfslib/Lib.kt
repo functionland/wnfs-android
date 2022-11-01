@@ -1,4 +1,4 @@
-package com.functionland.lib;
+package com.functionland.wnfslib;
 
 private external fun testWNFSNative(): String?
 

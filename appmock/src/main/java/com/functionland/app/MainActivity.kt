@@ -2,7 +2,7 @@ package com.functionland.app
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import com.functionland.lib.initRustLogger
+import com.functionland.wnfslib.initRustLogger
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

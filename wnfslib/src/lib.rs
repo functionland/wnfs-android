@@ -16,11 +16,11 @@ pub mod android {
     use chrono::Utc;
 
     #[no_mangle]
-    pub extern "C" fn Java_com_functionland_lib_LibKt_initRustLogger(_: JNIEnv, _: JClass) {
+    pub extern "C" fn Java_com_functionland_wnfslib_LibKt_initRustLogger(_: JNIEnv, _: JClass) {
         android_logger::init_once(Config::default().with_min_level(Level::Trace));
     }
     #[no_mangle]
-    pub extern "C" fn Java_com_functionland_lib_LibKt_testWNFSNative(
+    pub extern "C" fn Java_com_functionland_wnfslib_LibKt_testWNFSNative(
         env: JNIEnv,
         _: JClass
     ) -> jstring {

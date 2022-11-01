@@ -7,7 +7,7 @@ import junit.framework.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import com.functionland.lib.testWNFS
+import com.functionland.wnfslib.testWNFS
 import junit.framework.Assert.assertNotNull
 
 
