@@ -68,17 +68,19 @@ publishing {
         }
     }
     repositories {
-        maven {
-            name = "GithubPackages"
-            url = "https://maven.pkg.github.com/hhio618/wnfs-android"
-            credentials {
-                username = System.getenv("GITHUB_ACTOR")
-                password = System.getenv("GITHUB_TOKEN")
-            }
-        }
+        mavenLocal()
+        // maven {
+        //     name = "GithubPackages"
+        //     url = "https://maven.pkg.github.com/hhio618/wnfs-android"
+        //     credentials {
+        //         username = System.getenv("GITHUB_ACTOR")
+        //         password = System.getenv("GITHUB_TOKEN")
+        //     }
+        // }
 
     }
 }
+
 
 repositories {
     mavenCentral()
