@@ -1,9 +1,36 @@
 package com.functionland.wnfslib;
 
-private external fun testWNFSNative(): String?
+data class Config(
+   val cid: String,
+   val private_ref: String){
+   companion object {
+     @JvmStatic
+     fun create(cid: String, private_ref: String) : Config = Config(cid, private_ref)
+  }
+}
 
-fun testWNFS(): String? {
-   return testWNFSNative()
+private external fun createPrivateForestNative(dbPath: String): String
+
+private external fun createRootDirNative(dbPath: String, cid: String): Config
+
+private external fun writeFileNative(dbPath: String, cid: String, privateRef: String, path: String, content: ByteArray): String
+
+private external fun lsNative(dbPath: String, cid: String, privateRef: String, path: String): String
+
+fun createPrivateForest(dbPath: String): String {
+   return createPrivateForestNative(dbPath)
+}
+
+fun createRootDir(dbPath: String, cid: String): Config {
+   return createRootDirNative(dbPath, cid)
+}
+
+fun writeFile(dbPath: String, cid: String, privateRef: String, path: String, content: ByteArray): String {
+   return writeFileNative(dbPath, cid, privateRef, path, content)
+}
+
+fun ls(dbPath: String, cid: String, privateRef: String, path: String): String {
+   return lsNative(dbPath, cid, privateRef, path)
 }
 
 // Initialize Rust Library Logging

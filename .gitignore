@@ -13,3 +13,5 @@
 *.tab.values.at
 misc.xml
 target
+.vscode
+tmp

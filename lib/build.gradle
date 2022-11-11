@@ -41,7 +41,7 @@ cargo {
     targets = ["arm64", "x86", "x86_64", "arm"]
     prebuiltToolchains = true
 //    Set to "debug" to enable logging. Or "release" to make a production build.
-    profile = "release"
+    profile = "debug"
 }
 
 dependencies {
@@ -59,8 +59,8 @@ tasks.whenTaskAdded { task ->
 publishing {
     publications {
         release(MavenPublication) {
-            groupId = "com.functionland"
-            artifactId = "wnfslib"
+            groupId = "land.fx"
+            artifactId = "wnfs"
 
             afterEvaluate {
                 from components.release
@@ -68,16 +68,7 @@ publishing {
         }
     }
     repositories {
-        mavenLocal()
-        // maven {
-        //     name = "GithubPackages"
-        //     url = "https://maven.pkg.github.com/hhio618/wnfs-android"
-        //     credentials {
-        //         username = System.getenv("GITHUB_ACTOR")
-        //         password = System.getenv("GITHUB_TOKEN")
-        //     }
-        // }
-
+        mavenCentral()
     }
 }
 
