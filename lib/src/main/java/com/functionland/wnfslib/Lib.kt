@@ -17,6 +17,8 @@ private external fun writeFileNative(dbPath: String, cid: String, privateRef: St
 
 private external fun lsNative(dbPath: String, cid: String, privateRef: String, path: String): String
 
+private external fun readFileNative(dbPath: String, cid: String, privateRef: String, path: String): ByteArray
+
 fun createPrivateForest(dbPath: String): String {
    return createPrivateForestNative(dbPath)
 }
@@ -33,5 +35,8 @@ fun ls(dbPath: String, cid: String, privateRef: String, path: String): String {
    return lsNative(dbPath, cid, privateRef, path)
 }
 
+fun readFile(dbPath: String, cid: String, privateRef: String, path: String): ByteArray {
+   return readFileNative(dbPath, cid, privateRef, path)
+}
 // Initialize Rust Library Logging
 external fun initRustLogger()

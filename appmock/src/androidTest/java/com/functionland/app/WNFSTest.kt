@@ -11,6 +11,7 @@ import kotlin.io.path.Path
 import com.functionland.wnfslib.createPrivateForest
 import com.functionland.wnfslib.createRootDir
 import com.functionland.wnfslib.writeFile
+import com.functionland.wnfslib.readFile
 import com.functionland.wnfslib.ls
 import junit.framework.Assert.assertNotNull
 
@@ -34,5 +35,7 @@ class WNFSTest {
         assertNotNull("cid should not be null", cid)
         val fileNames = ls(path.toString(), cid, config.private_ref, "root")
         assertEquals(fileNames, "test.txt")
+        val content = readFile(path.toString(), cid, config.private_ref, "root/test.txt")
+        assert(content contentEquals "Hello, World!".toByteArray())
     }
 }
