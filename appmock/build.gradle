@@ -9,7 +9,7 @@ android {
         viewBinding true
     }
     defaultConfig {
-        applicationId "com.functionland.app"
+        applicationId "land.fx.app"
         minSdkVersion 26
         targetSdkVersion 31
         versionCode 1
@@ -39,6 +39,7 @@ android {
     }
     
     ndkVersion '22.1.7171670'
+    namespace 'land.fx.app'
 }
 
 dependencies {
