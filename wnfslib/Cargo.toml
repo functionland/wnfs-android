@@ -11,7 +11,7 @@ name = "wnfslib"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-wnfs = "0.1.7"
+wnfs = "0.1.9"
 utils = { path = "utils" }
 serde = "1.0.147"
 serde_json = "1.0.87"

@@ -1,4 +1,4 @@
-package com.functionland.app
+package land.fx.app
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -8,11 +8,11 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import kotlin.io.path.Path
-import com.functionland.wnfslib.createPrivateForest
-import com.functionland.wnfslib.createRootDir
-import com.functionland.wnfslib.writeFile
-import com.functionland.wnfslib.readFile
-import com.functionland.wnfslib.ls
+import land.fx.wnfslib.createPrivateForest
+import land.fx.wnfslib.createRootDir
+import land.fx.wnfslib.writeFile
+import land.fx.wnfslib.readFile
+import land.fx.wnfslib.ls
 import junit.framework.Assert.assertNotNull
 
 @RunWith(AndroidJUnit4::class)

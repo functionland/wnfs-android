@@ -1,4 +1,4 @@
-package com.functionland.wnfslib;
+package land.fx.wnfslib;
 
 data class Config(
    val cid: String,

@@ -32,7 +32,8 @@ android {
             withSourcesJar()
         }
     }
-    ndkVersion '24.0.8215888'
+    ndkVersion rootProject.ext.ndkVersion
+    namespace 'land.fx.wnfslib'
 }
 
 cargo {

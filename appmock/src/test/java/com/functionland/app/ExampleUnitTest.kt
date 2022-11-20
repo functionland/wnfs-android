@@ -1,4 +1,4 @@
-package com.functionland.app
+package land.fx.app
 
 import org.junit.Test
 

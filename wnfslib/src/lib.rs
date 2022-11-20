@@ -24,12 +24,12 @@ pub mod android {
     use utils::private::PrivateDirectoryHelper;
 
     #[no_mangle]
-    pub extern "C" fn Java_com_functionland_wnfslib_LibKt_initRustLogger(_: JNIEnv, _: JClass) {
+    pub extern "C" fn Java_land_fx_wnfslib_LibKt_initRustLogger(_: JNIEnv, _: JClass) {
         android_logger::init_once(Config::default().with_min_level(Level::Trace));
     }
 
     #[no_mangle]
-    pub extern "C" fn Java_com_functionland_wnfslib_LibKt_createPrivateForestNative(
+    pub extern "C" fn Java_land_fx_wnfslib_LibKt_createPrivateForestNative(
         env: JNIEnv,
         _: JClass,
         jni_db_path: JString,
@@ -45,7 +45,7 @@ pub mod android {
     }
 
     #[no_mangle]
-    pub extern "C" fn Java_com_functionland_wnfslib_LibKt_createRootDirNative(
+    pub extern "C" fn Java_land_fx_wnfslib_LibKt_createRootDirNative(
         env: JNIEnv,
         _: JClass,
         jni_db_path: JString,
@@ -68,7 +68,7 @@ pub mod android {
     }
 
     #[no_mangle]
-    pub extern "C" fn Java_com_functionland_wnfslib_LibKt_writeFileNative(
+    pub extern "C" fn Java_land_fx_wnfslib_LibKt_writeFileNative(
         env: JNIEnv,
         _: JClass,
         jni_db_path: JString,
@@ -94,7 +94,7 @@ pub mod android {
     }
 
     #[no_mangle]
-    pub extern "C" fn Java_com_functionland_wnfslib_LibKt_readFileNative(
+    pub extern "C" fn Java_land_fx_wnfslib_LibKt_readFileNative(
         env: JNIEnv,
         _: JClass,
         jni_db_path: JString,
@@ -118,7 +118,7 @@ pub mod android {
     }
 
     #[no_mangle]
-    pub extern "C" fn Java_com_functionland_wnfslib_LibKt_mkdirNative(
+    pub extern "C" fn Java_land_fx_wnfslib_LibKt_mkdirNative(
         env: JNIEnv,
         _: JClass,
         jni_db_path: JString,
@@ -142,7 +142,7 @@ pub mod android {
     }
 
     #[no_mangle]
-    pub extern "C" fn Java_com_functionland_wnfslib_LibKt_lsNative(
+    pub extern "C" fn Java_land_fx_wnfslib_LibKt_lsNative(
         env: JNIEnv,
         _: JClass,
         jni_db_path: JString,
@@ -175,13 +175,13 @@ pub mod android {
         cid: Cid,
         private_ref: PrivateRef,
     ) -> jobject {
-        let config_cls = env.find_class("com/functionland/wnfslib/Config").unwrap();
+        let config_cls = env.find_class("land/fx/wnfslib/Config").unwrap();
 
         let create_config_fn = env
             .get_static_method_id(
                 config_cls,
                 "create",
-                "(Ljava/lang/String;Ljava/lang/String;)Lcom/functionland/wnfslib/Config;",
+                "(Ljava/lang/String;Ljava/lang/String;)Lland/fx/wnfslib/Config;",
             )
             .unwrap();
 
@@ -193,7 +193,7 @@ pub mod android {
         .call_static_method_unchecked(
              config_cls,
             create_config_fn,
-            JavaType::Object(String::from("com/functionland/wnfslib/Config")),
+            JavaType::Object(String::from("land/fx/wnfslib/Config")),
             &[
                 JValue::from(cid),
                 JValue::from(private_ref),
