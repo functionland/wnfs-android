@@ -13,6 +13,7 @@ import land.fx.wnfslib.createRootDir
 import land.fx.wnfslib.writeFile
 import land.fx.wnfslib.readFile
 import land.fx.wnfslib.ls
+import land.fx.wnfslib.mkdir
 import junit.framework.Assert.assertNotNull
 
 @RunWith(AndroidJUnit4::class)
@@ -28,14 +29,18 @@ class WNFSTest {
         var cid = createPrivateForest(path.toString())
         println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
         println(cid)
-        val config = createRootDir(path.toString(), cid)
+        var config = createRootDir(path.toString(), cid)
         assertNotNull("cid should not be null", cid)
         assertNotNull("private_ref should not be null", config.private_ref)
-        cid = writeFile(path.toString(), config.cid, config.private_ref, "root/test.txt", "Hello, World!".toByteArray())
+        config = writeFile(path.toString(), config.cid, config.private_ref, "root/test.txt", "Hello, World!".toByteArray())
         assertNotNull("cid should not be null", cid)
-        val fileNames = ls(path.toString(), cid, config.private_ref, "root")
-        assertEquals(fileNames, "test.txt")
-        val content = readFile(path.toString(), cid, config.private_ref, "root/test.txt")
+        config = mkdir(path.toString(), config.cid, config.private_ref, "root/test1")
+        val fileNames = ls(path.toString(), config.cid, config.private_ref, "root")
+        assertEquals(fileNames, "test.txt\ntest1")
+        val content = readFile(path.toString(), config.cid, config.private_ref, "root/test.txt")
         assert(content contentEquals "Hello, World!".toByteArray())
+        config = rm(path.toString(), config.cid, config.private_ref, "root/test.txt")
+        content = readFile(path.toString(), config.cid, config.private_ref, "root/test.txt")
+        assertNull(content)
     }
 }

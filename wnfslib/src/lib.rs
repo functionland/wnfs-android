@@ -21,7 +21,77 @@ pub mod android {
     use wnfs::public::PublicDirectory;
     use chrono::Utc;
     use kv::*;
-    use utils::private::PrivateDirectoryHelper;
+    use wnfsutils::private_forest::PrivateDirectoryHelper;
+    use wnfsutils::blockstore::FFIStore;
+
+
+    struct JNIStore{
+        env: JNIEnv,
+        fula_client: JObject
+    }
+    impl JNIStore {
+        fn new(env: JNIEnv, fula_client: JObject) -> Self{
+            Self { env, fula_client }
+        }
+    }
+    impl FFIStore for JNIStore {
+        
+        /// Retrieves an array of bytes from the block store with given CID.
+        fn get_block(&self, cid: Vec<u8>) -> Result<Vec<u8>>{
+            let get_fn = env
+                .get_method_id(
+                    self.fula_client,
+                    "get",
+                    "([B;)[B;",
+                )
+                .unwrap();
+    
+            let cidJByteArray = vec_to_jbyteArray(env, cid);
+            let dataJByteArray = env
+            .call_method_unchecked(
+                self.fula_client,
+                get_fn,
+                JavaType::Object(String::from("[B")),
+                &[
+                    JValue::from(cidJByteArray),
+                ],
+            )
+            .unwrap()
+            .l()
+            .unwrap();
+
+            let data = jbyteArray_to_vec(env, dataJByteArray);
+            Ok(data)
+        }
+
+        /// Stores an array of bytes in the block store.
+        fn put_block(&self, cid: Vec<u8>, bytes: Vec<u8>) -> Result<Vec<u8>>{
+            let put_fn = env
+                .get_method_id(
+                    self.fula_client,
+                    "put",
+                    "([B;[B;);",
+                )
+                .unwrap();
+    
+            let cidJByteArray = vec_to_jbyteArray(env, cid);
+            let dataJByteArray = vec_to_jbyteArray(env, bytes);
+            env
+            .call_method_unchecked(
+                self.fula_client,
+                get_fn,
+                JavaType::Object(String::from("")),
+                &[
+                    JValue::from(cidJByteArray),
+                    JValue::from(dataJByteArray),
+                ],
+            )
+            .unwrap()
+            .l()
+            .unwrap();
+            Ok(cidJByteArray)
+        }
+    }
 
     #[no_mangle]
     pub extern "C" fn Java_land_fx_wnfslib_LibKt_initRustLogger(_: JNIEnv, _: JClass) {
@@ -32,14 +102,10 @@ pub mod android {
     pub extern "C" fn Java_land_fx_wnfslib_LibKt_createPrivateForestNative(
         env: JNIEnv,
         _: JClass,
-        jni_db_path: JString,
+        jni_fula_client: JObject,
     ) -> jstring {
-        let db_path: String = env
-            .get_string(jni_db_path)
-            .expect("Failed to parse input db path")
-            .into();
-
-        let helper = &mut PrivateDirectoryHelper::new(db_path);
+        let store = JNIStore::new(env, jni_fula_client);
+        let helper = &mut PrivateDirectoryHelper::new(store);
         trace!("**********************cp1**************");
         serialize_cid(env, helper.synced_new_private_forest()).into_inner()
     }
@@ -48,16 +114,11 @@ pub mod android {
     pub extern "C" fn Java_land_fx_wnfslib_LibKt_createRootDirNative(
         env: JNIEnv,
         _: JClass,
-        jni_db_path: JString,
+        jni_fula_client: JObject,
         jni_cid: JString,
     ) -> jobject {
-
-        let db_path: String = env
-            .get_string(jni_db_path)
-            .expect("Failed to parse input db path")
-            .into();
-
-        let helper = &mut PrivateDirectoryHelper::new(db_path);
+        let store = JNIStore::new(env, jni_fula_client);
+        let helper = &mut PrivateDirectoryHelper::new(store);
         let forest_cid = deserialize_cid(env, jni_cid);
         trace!("cid: {}", forest_cid);
         let forest = helper.synced_load_forest(forest_cid);
@@ -71,17 +132,14 @@ pub mod android {
     pub extern "C" fn Java_land_fx_wnfslib_LibKt_writeFileNative(
         env: JNIEnv,
         _: JClass,
-        jni_db_path: JString,
+        jni_fula_client: JObject,
         jni_cid: JString,
         jni_private_ref: JString,
         jni_path_segments: JString,
         jni_content: jbyteArray,
-    ) -> jstring {
-        let db_path: String = env
-            .get_string(jni_db_path)
-            .expect("Failed to parse input db name")
-            .into();
-        let helper = &mut PrivateDirectoryHelper::new(db_path);
+    ) -> jobject {
+        let store = JNIStore::new(env, jni_fula_client);
+        let helper = &mut PrivateDirectoryHelper::new(store);
 
         let cid = deserialize_cid(env, jni_cid);
         let private_ref = deserialize_private_ref(env, jni_private_ref);
@@ -90,23 +148,21 @@ pub mod android {
         let root_dir = helper.synced_get_root_dir(forest.to_owned(), private_ref);
         let path_segments = prepare_path_segments(env, jni_path_segments);
         let content = jbyteArray_to_vec(env, jni_content);
-        serialize_cid(env, helper.synced_write_file(forest.to_owned(), root_dir, &path_segments, content)).into_inner()
+        let (cid, private_ref) = helper.synced_write_file(forest.to_owned(), root_dir, &path_segments, content);
+        serialize_config(env, cid, private_ref)
     }
 
     #[no_mangle]
     pub extern "C" fn Java_land_fx_wnfslib_LibKt_readFileNative(
         env: JNIEnv,
         _: JClass,
-        jni_db_path: JString,
+        jni_fula_client: JObject,
         jni_cid: JString,
         jni_private_ref: JString,
         jni_path_segments: JString,
     ) -> jbyteArray {
-        let db_path: String = env
-            .get_string(jni_db_path)
-            .expect("Failed to parse input db name")
-            .into();
-        let helper = &mut PrivateDirectoryHelper::new(db_path);
+        let store = JNIStore::new(env, jni_fula_client);
+        let helper = &mut PrivateDirectoryHelper::new(store);
 
         let cid = deserialize_cid(env, jni_cid);
         let private_ref = deserialize_private_ref(env, jni_private_ref);
@@ -121,16 +177,13 @@ pub mod android {
     pub extern "C" fn Java_land_fx_wnfslib_LibKt_mkdirNative(
         env: JNIEnv,
         _: JClass,
-        jni_db_path: JString,
+        jni_fula_client: JObject,
         jni_cid: JString,
         jni_private_ref: JString,
         jni_path_segments: JString,
     ) -> jstring {
-        let db_path: String = env
-            .get_string(jni_db_path)
-            .expect("Failed to parse input db name")
-            .into();
-        let helper = &mut PrivateDirectoryHelper::new(db_path);
+        let store = JNIStore::new(env, jni_fula_client);
+        let helper = &mut PrivateDirectoryHelper::new(store);
 
         let cid = deserialize_cid(env, jni_cid);
         let private_ref = deserialize_private_ref(env, jni_private_ref);
@@ -138,24 +191,21 @@ pub mod android {
         let forest = helper.synced_load_forest(cid);
         let root_dir = helper.synced_get_root_dir(forest.to_owned(), private_ref);
         let path_segments = prepare_path_segments(env, jni_path_segments);
-        serialize_cid(env, helper.synced_mkdir(forest.to_owned(), root_dir, &path_segments)).into_inner()
+        let (cid, private_ref) = helper.synced_mkdir(forest.to_owned(), root_dir, &path_segments);
+        serialize_config(env, cid, private_ref)
     }
 
     #[no_mangle]
     pub extern "C" fn Java_land_fx_wnfslib_LibKt_lsNative(
         env: JNIEnv,
         _: JClass,
-        jni_db_path: JString,
+        jni_fula_client: JObject,
         jni_cid: JString,
         jni_private_ref: JString,
         jni_path_segments: JString,
     ) -> jstring {
-        let db_path: String = env
-            .get_string(jni_db_path)
-            .expect("Failed to parse input db name")
-            .into();
-
-        let helper = &mut PrivateDirectoryHelper::new(db_path);
+        let store = JNIStore::new(env, jni_fula_client);
+        let helper = &mut PrivateDirectoryHelper::new(store);
 
         let cid = deserialize_cid(env, jni_cid);
         let private_ref = deserialize_private_ref(env, jni_private_ref);
