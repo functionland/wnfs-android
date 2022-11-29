@@ -1,7 +1,7 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
     ext.kotlin_version = '1.7.10'
-    ext.ndkVersion = '25.1.8937393'
+    ext.ndkVersion = '25.0.8775105'
     repositories {
         google()
         jcenter()
@@ -29,6 +29,7 @@ allprojects {
         jcenter()
         maven { url "https://plugins.gradle.org/m2/" }
         gradlePluginPortal()
+        maven { url "https://jitpack.io" }
     }
 }
 

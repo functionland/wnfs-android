@@ -1,5 +1,5 @@
-#[cfg(target_os = "android")]
-#[allow(non_snake_case)]
+// #[cfg(target_os = "android")]
+// #[allow(non_snake_case)]
 
 pub mod android {
     extern crate jni;
@@ -21,24 +21,27 @@ pub mod android {
     use wnfs::public::PublicDirectory;
     use chrono::Utc;
     use kv::*;
+    use anyhow::Result;
     use wnfsutils::private_forest::PrivateDirectoryHelper;
-    use wnfsutils::blockstore::FFIStore;
+    use wnfsutils::blockstore::{FFIStore, FFIFriendlyBlockStore};
 
 
-    struct JNIStore{
-        env: JNIEnv,
-        fula_client: JObject
+    struct JNIStore<'a>{
+        env: JNIEnv<'a>,
+        fula_client: JObject<'a>
     }
-    impl JNIStore {
-        fn new(env: JNIEnv, fula_client: JObject) -> Self{
+
+    impl<'a> JNIStore<'a> {
+        fn new(env: JNIEnv<'a>, fula_client: JObject<'a>) -> Self{
             Self { env, fula_client }
         }
     }
-    impl FFIStore for JNIStore {
-        
+
+    impl<'a> FFIStore<'a> for JNIStore<'a> {
+
         /// Retrieves an array of bytes from the block store with given CID.
         fn get_block(&self, cid: Vec<u8>) -> Result<Vec<u8>>{
-            let get_fn = env
+            let get_fn = self.env
                 .get_method_id(
                     self.fula_client,
                     "get",
@@ -46,8 +49,8 @@ pub mod android {
                 )
                 .unwrap();
     
-            let cidJByteArray = vec_to_jbyteArray(env, cid);
-            let dataJByteArray = env
+            let cidJByteArray = vec_to_jbyteArray(self.env, cid);
+            let dataJByteArray = self.env
             .call_method_unchecked(
                 self.fula_client,
                 get_fn,
@@ -60,13 +63,13 @@ pub mod android {
             .l()
             .unwrap();
 
-            let data = jbyteArray_to_vec(env, dataJByteArray);
+            let data = jbyteArray_to_vec(self.env, dataJByteArray.into_inner());
             Ok(data)
         }
 
         /// Stores an array of bytes in the block store.
         fn put_block(&self, cid: Vec<u8>, bytes: Vec<u8>) -> Result<Vec<u8>>{
-            let put_fn = env
+            let put_fn = self.env
                 .get_method_id(
                     self.fula_client,
                     "put",
@@ -74,12 +77,12 @@ pub mod android {
                 )
                 .unwrap();
     
-            let cidJByteArray = vec_to_jbyteArray(env, cid);
-            let dataJByteArray = vec_to_jbyteArray(env, bytes);
-            env
+            let cidJByteArray = vec_to_jbyteArray(self.env, cid.to_owned());
+            let dataJByteArray = vec_to_jbyteArray(self.env, bytes);
+            self.env
             .call_method_unchecked(
                 self.fula_client,
-                get_fn,
+                put_fn,
                 JavaType::Object(String::from("")),
                 &[
                     JValue::from(cidJByteArray),
@@ -89,7 +92,7 @@ pub mod android {
             .unwrap()
             .l()
             .unwrap();
-            Ok(cidJByteArray)
+            Ok(cid.to_owned())
         }
     }
 
@@ -105,9 +108,10 @@ pub mod android {
         jni_fula_client: JObject,
     ) -> jstring {
         let store = JNIStore::new(env, jni_fula_client);
-        let helper = &mut PrivateDirectoryHelper::new(store);
+        let block_store = FFIFriendlyBlockStore::new(Box::new(store));
+        let helper = &mut PrivateDirectoryHelper::new(block_store);
         trace!("**********************cp1**************");
-        serialize_cid(env, helper.synced_new_private_forest()).into_inner()
+        serialize_cid(env, helper.synced_create_private_forest().unwrap()).into_inner()
     }
 
     #[no_mangle]
@@ -118,11 +122,12 @@ pub mod android {
         jni_cid: JString,
     ) -> jobject {
         let store = JNIStore::new(env, jni_fula_client);
-        let helper = &mut PrivateDirectoryHelper::new(store);
+        let block_store = FFIFriendlyBlockStore::new(Box::new(store));
+        let helper = &mut PrivateDirectoryHelper::new(block_store);
         let forest_cid = deserialize_cid(env, jni_cid);
         trace!("cid: {}", forest_cid);
-        let forest = helper.synced_load_forest(forest_cid);
-        let (cid, private_ref) = helper.synced_make_root_dir(forest);
+        let forest = helper.synced_load_forest(forest_cid).unwrap();
+        let (cid, private_ref) = helper.synced_init(forest);
         trace!("pref: {:?}", private_ref);
 
         serialize_config(env, cid, private_ref)
@@ -139,13 +144,14 @@ pub mod android {
         jni_content: jbyteArray,
     ) -> jobject {
         let store = JNIStore::new(env, jni_fula_client);
-        let helper = &mut PrivateDirectoryHelper::new(store);
-
+        let block_store = FFIFriendlyBlockStore::new(Box::new(store));
+        let helper = &mut PrivateDirectoryHelper::new(block_store);
+        
         let cid = deserialize_cid(env, jni_cid);
         let private_ref = deserialize_private_ref(env, jni_private_ref);
 
-        let forest = helper.synced_load_forest(cid);
-        let root_dir = helper.synced_get_root_dir(forest.to_owned(), private_ref);
+        let forest = helper.synced_load_forest(cid).unwrap();
+        let root_dir = helper.synced_get_root_dir(forest.to_owned(), private_ref).unwrap();
         let path_segments = prepare_path_segments(env, jni_path_segments);
         let content = jbyteArray_to_vec(env, jni_content);
         let (cid, private_ref) = helper.synced_write_file(forest.to_owned(), root_dir, &path_segments, content);
@@ -162,15 +168,16 @@ pub mod android {
         jni_path_segments: JString,
     ) -> jbyteArray {
         let store = JNIStore::new(env, jni_fula_client);
-        let helper = &mut PrivateDirectoryHelper::new(store);
-
+        let block_store = FFIFriendlyBlockStore::new(Box::new(store));
+        let helper = &mut PrivateDirectoryHelper::new(block_store);
+        
         let cid = deserialize_cid(env, jni_cid);
         let private_ref = deserialize_private_ref(env, jni_private_ref);
 
-        let forest = helper.synced_load_forest(cid);
-        let root_dir = helper.synced_get_root_dir(forest.to_owned(), private_ref);
+        let forest = helper.synced_load_forest(cid).unwrap();
+        let root_dir = helper.synced_get_root_dir(forest.to_owned(), private_ref).unwrap();
         let path_segments = prepare_path_segments(env, jni_path_segments);
-        vec_to_jbyteArray(env, helper.synced_read_file(forest.to_owned(), root_dir, &path_segments))
+        vec_to_jbyteArray(env, helper.synced_read_file(forest.to_owned(), root_dir, &path_segments).unwrap())
     }
 
     #[no_mangle]
@@ -183,13 +190,14 @@ pub mod android {
         jni_path_segments: JString,
     ) -> jstring {
         let store = JNIStore::new(env, jni_fula_client);
-        let helper = &mut PrivateDirectoryHelper::new(store);
-
+        let block_store = FFIFriendlyBlockStore::new(Box::new(store));
+        let helper = &mut PrivateDirectoryHelper::new(block_store);
+        
         let cid = deserialize_cid(env, jni_cid);
         let private_ref = deserialize_private_ref(env, jni_private_ref);
 
-        let forest = helper.synced_load_forest(cid);
-        let root_dir = helper.synced_get_root_dir(forest.to_owned(), private_ref);
+        let forest = helper.synced_load_forest(cid).unwrap();
+        let root_dir = helper.synced_get_root_dir(forest.to_owned(), private_ref).unwrap();
         let path_segments = prepare_path_segments(env, jni_path_segments);
         let (cid, private_ref) = helper.synced_mkdir(forest.to_owned(), root_dir, &path_segments);
         serialize_config(env, cid, private_ref)
@@ -205,13 +213,14 @@ pub mod android {
         jni_path_segments: JString,
     ) -> jstring {
         let store = JNIStore::new(env, jni_fula_client);
-        let helper = &mut PrivateDirectoryHelper::new(store);
-
+        let block_store = FFIFriendlyBlockStore::new(Box::new(store));
+        let helper = &mut PrivateDirectoryHelper::new(block_store);
+        
         let cid = deserialize_cid(env, jni_cid);
         let private_ref = deserialize_private_ref(env, jni_private_ref);
 
-        let forest = helper.synced_load_forest(cid);
-        let root_dir = helper.synced_get_root_dir(forest.to_owned(), private_ref);
+        let forest = helper.synced_load_forest(cid).unwrap();
+        let root_dir = helper.synced_get_root_dir(forest.to_owned(), private_ref).unwrap();
         let path_segments = prepare_path_segments(env, jni_path_segments);
         let output = prepare_ls_output(helper.synced_ls_files(forest.to_owned(), root_dir, &path_segments));
         env.new_string(output.join("\n")).

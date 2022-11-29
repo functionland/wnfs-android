@@ -2771,31 +2771,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "wnfs_utils"
-version = "0.1.0"
-source = "git+https://github.com/hhio618/wnfs-utils#fe34f1d9f6171e926912be2700eb1e82c866b135"
-dependencies = [
- "anyhow",
- "async-std",
- "async-trait",
- "chrono",
- "crc32fast",
- "kv",
- "libipld",
- "multihash",
- "rand 0.8.5",
- "rand_core 0.6.4",
- "serde",
- "serde_json",
- "tokio",
- "wnfs",
-]
-
-[[package]]
 name = "wnfslib-android"
 version = "0.1.0"
 dependencies = [
  "android_logger",
+ "anyhow",
  "chrono",
  "crc32fast",
  "env_logger",
@@ -2812,7 +2792,28 @@ dependencies = [
  "tokio",
  "url",
  "wnfs",
- "wnfs_utils",
+ "wnfsutils",
+]
+
+[[package]]
+name = "wnfsutils"
+version = "0.1.0"
+source = "git+https://github.com/hhio618/wnfs-utils#71971fae1eba47e0715718796805b4e1a10587e8"
+dependencies = [
+ "anyhow",
+ "async-std",
+ "async-trait",
+ "chrono",
+ "crc32fast",
+ "kv",
+ "libipld",
+ "multihash",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "serde",
+ "serde_json",
+ "tokio",
+ "wnfs",
 ]
 
 [[package]]
