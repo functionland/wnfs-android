@@ -1,5 +1,7 @@
 package land.fx.wnfslib;
 
+import fulamobile.Client;
+
 data class Config(
    val cid: String,
    val private_ref: String){
@@ -9,45 +11,45 @@ data class Config(
   }
 }
 
-private external fun createPrivateForestNative(dbPath: String): String
+private external fun createPrivateForestNative(fulaClient: Client): String
 
-private external fun createRootDirNative(dbPath: String, cid: String): Config
+private external fun createRootDirNative(fulaClient: Client, cid: String): Config
 
-private external fun writeFileNative(dbPath: String, cid: String, privateRef: String, path: String, content: ByteArray): Config
+private external fun writeFileNative(fulaClient: Client, cid: String, privateRef: String, path: String, content: ByteArray): Config
 
-private external fun lsNative(dbPath: String, cid: String, privateRef: String, path: String): String
+private external fun lsNative(fulaClient: Client, cid: String, privateRef: String, path: String): String
 
-private external fun mkdirNative(dbPath: String, cid: String, privateRef: String, path: String): Config
+private external fun mkdirNative(fulaClient: Client, cid: String, privateRef: String, path: String): Config
 
-private external fun rmNative(dbPath: String, cid: String, privateRef: String, path: String): Config
+private external fun rmNative(fulaClient: Client, cid: String, privateRef: String, path: String): Config
 
-private external fun readFileNative(dbPath: String, cid: String, privateRef: String, path: String): ByteArray?
+private external fun readFileNative(fulaClient: Client, cid: String, privateRef: String, path: String): ByteArray?
 
-fun createPrivateForest(dbPath: String): String {
+fun createPrivateForest(fulaClient: Client): String {
    return createPrivateForestNative(dbPath)
 }
 
-fun createRootDir(dbPath: String, cid: String): Config {
+fun createRootDir(fulaClient: Client, cid: String): Config {
    return createRootDirNative(dbPath, cid)
 }
 
-fun writeFile(dbPath: String, cid: String, privateRef: String, path: String, content: ByteArray): Config {
+fun writeFile(fulaClient: Client, cid: String, privateRef: String, path: String, content: ByteArray): Config {
    return writeFileNative(dbPath, cid, privateRef, path, content)
 }
 
-fun ls(dbPath: String, cid: String, privateRef: String, path: String): String {
+fun ls(fulaClient: Client, cid: String, privateRef: String, path: String): String {
    return lsNative(dbPath, cid, privateRef, path)
 }
 
-fun mkdir(dbPath: String, cid: String, privateRef: String, path: String): Config {
+fun mkdir(fulaClient: Client, cid: String, privateRef: String, path: String): Config {
    return mkdirNative(dbPath, cid, privateRef, path)
 }
 
-fun rm(dbPath: String, cid: String, privateRef: String, path: String): Config {
+fun rm(fulaClient: Client, cid: String, privateRef: String, path: String): Config {
    return rmNative(dbPath, cid, privateRef, path)
 }
 
-fun readFile(dbPath: String, cid: String, privateRef: String, path: String): ByteArray? {
+fun readFile(fulaClient: Client, cid: String, privateRef: String, path: String): ByteArray? {
    return readFileNative(dbPath, cid, privateRef, path)
 }
 
