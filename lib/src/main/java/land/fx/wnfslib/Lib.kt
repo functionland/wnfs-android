@@ -26,31 +26,31 @@ private external fun rmNative(fulaClient: Client, cid: String, privateRef: Strin
 private external fun readFileNative(fulaClient: Client, cid: String, privateRef: String, path: String): ByteArray?
 
 fun createPrivateForest(fulaClient: Client): String {
-   return createPrivateForestNative(dbPath)
+   return createPrivateForestNative(fulaClient)
 }
 
 fun createRootDir(fulaClient: Client, cid: String): Config {
-   return createRootDirNative(dbPath, cid)
+   return createRootDirNative(fulaClient, cid)
 }
 
 fun writeFile(fulaClient: Client, cid: String, privateRef: String, path: String, content: ByteArray): Config {
-   return writeFileNative(dbPath, cid, privateRef, path, content)
+   return writeFileNative(fulaClient, cid, privateRef, path, content)
 }
 
 fun ls(fulaClient: Client, cid: String, privateRef: String, path: String): String {
-   return lsNative(dbPath, cid, privateRef, path)
+   return lsNative(fulaClient, cid, privateRef, path)
 }
 
 fun mkdir(fulaClient: Client, cid: String, privateRef: String, path: String): Config {
-   return mkdirNative(dbPath, cid, privateRef, path)
+   return mkdirNative(fulaClient, cid, privateRef, path)
 }
 
 fun rm(fulaClient: Client, cid: String, privateRef: String, path: String): Config {
-   return rmNative(dbPath, cid, privateRef, path)
+   return rmNative(fulaClient, cid, privateRef, path)
 }
 
 fun readFile(fulaClient: Client, cid: String, privateRef: String, path: String): ByteArray? {
-   return readFileNative(dbPath, cid, privateRef, path)
+   return readFileNative(fulaClient, cid, privateRef, path)
 }
 
 // Initialize Rust Library Logging
