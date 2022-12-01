@@ -5,7 +5,12 @@ A wnfslib wrapper for Android.
 ## Prerequisites
 
 - Kotlin toolchain
-- Android SDK + NDK r24 (latest)
+- Android SDK + NDK (latest)
+- python3 and Python command available
+- Cargo and CMake
+- java
+- gradle
+- rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-android x86_64-linux-android
 
 ## Debug
 
