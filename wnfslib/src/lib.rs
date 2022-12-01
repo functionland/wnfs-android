@@ -44,7 +44,7 @@ pub mod android {
             let get_fn = self.env
                 .get_method_id(
                     self.fula_client,
-                    "get",
+                    "get_block",
                     "([B;)[B;",
                 )
                 .unwrap();
@@ -68,31 +68,33 @@ pub mod android {
         }
 
         /// Stores an array of bytes in the block store.
-        fn put_block(&self, cid: Vec<u8>, bytes: Vec<u8>) -> Result<Vec<u8>>{
+        fn put_block(&self, bytes: Vec<u8>, codec: Vec<u8>) -> Result<Vec<u8>>{
             let put_fn = self.env
                 .get_method_id(
                     self.fula_client,
-                    "put",
-                    "([B;[B;);",
+                    "put_block",
+                    "([B;[B;)[B;",
                 )
                 .unwrap();
     
-            let cidJByteArray = vec_to_jbyteArray(self.env, cid.to_owned());
+            let codecJByteArray = vec_to_jbyteArray(self.env, codec.to_owned());
             let dataJByteArray = vec_to_jbyteArray(self.env, bytes);
-            self.env
+            let cidJByteArray = self.env
             .call_method_unchecked(
                 self.fula_client,
                 put_fn,
-                JavaType::Object(String::from("")),
+                JavaType::Object(String::from("[B")),
                 &[
-                    JValue::from(cidJByteArray),
+                    JValue::from(codecJByteArray),
                     JValue::from(dataJByteArray),
                 ],
             )
             .unwrap()
             .l()
             .unwrap();
-            Ok(cid.to_owned())
+
+            let cid = jbyteArray_to_vec(self.env, cidJByteArray.into_inner());
+            Ok(cid)
         }
     }
 
