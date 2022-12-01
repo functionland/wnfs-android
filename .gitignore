@@ -11,7 +11,9 @@
 .cxx
 *.tab
 *.tab.values.at
+*.lock
 misc.xml
 target
 .vscode
 tmp
+wnfslib/Cargo.lock
