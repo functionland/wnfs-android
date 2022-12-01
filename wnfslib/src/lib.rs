@@ -72,7 +72,7 @@ pub mod android {
             let put_fn = self.env
                 .get_method_id(
                     self.fula_client,
-                    "put_block",
+                    "put",
                     "([B;[B;)[B;",
                 )
                 .unwrap();
