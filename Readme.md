@@ -4,6 +4,8 @@ A wnfslib wrapper for Android.
 
 ## Prerequisites
 
+Use Ubuntu (on Windows it complains about openssl)
+
 - Kotlin toolchain
 - Android SDK + NDK (latest)
 - python3 and Python command available
