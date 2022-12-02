@@ -15,6 +15,7 @@ import land.fx.wnfslib.readFile
 import land.fx.wnfslib.ls
 import land.fx.wnfslib.mkdir
 import junit.framework.Assert.assertNotNull
+import fulamobile.Client;
 
 @RunWith(AndroidJUnit4::class)
 class WNFSTest {
