@@ -45,7 +45,7 @@ pub mod android {
             let get_fn = self.env
                 .get_method_id(
                     self.fula_client,
-                    "get_block",
+                    "get",
                     "([B;)[B;",
                 )
                 .unwrap();
