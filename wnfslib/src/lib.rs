@@ -73,6 +73,8 @@ pub mod android {
         /// Stores an array of bytes in the block store.
         fn put_block(&self, bytes: Vec<u8>, codec: i64) -> Result<Vec<u8>>{
             trace!("**********************put_block started**************");
+            trace!("**********************put_block coded={}", codec.to_string());
+            trace!("**********************put_block bytes={:?}", &bytes);
             let put_fn = self.env
                 .get_method_id(
                     self.fula_client,
