@@ -89,8 +89,8 @@ pub mod android {
                 put_fn,
                 JavaType::Object(String::from("[B")),
                 &[
-                    JValue::from(codec),
                     JValue::from(dataJByteArray),
+                    JValue::from(codec),
                 ],
             )
             .unwrap_or_else(|_err: jni::errors::Error| {
