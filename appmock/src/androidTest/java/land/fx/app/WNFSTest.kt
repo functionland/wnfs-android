@@ -33,6 +33,8 @@ class WNFSTest {
         Log.d("AppMock", "creating newClient with storePath="+configExt.storePath+"; bloxAddr="+configExt.bloxAddr)
         val client = Fulamobile.newClient(configExt)
         Log.d("AppMock", "client created with id="+client.id())
+        val testPutCid = client.put("ehsan".toByteArray(),55)
+        Log.d("AppMock", "put test was successful=$testPutCid")
         val privateForest = createPrivateForest(client)
         Log.d("AppMock", "privateForest created=$privateForest")
         println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
