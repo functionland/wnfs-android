@@ -30,10 +30,13 @@ class WNFSTest {
         configExt.bloxAddr = "/ip4/59.23.13.76/tcp/46640/p2p/QmRS9H18XHFrbmGKxi2TEBFz5ZzurkU9cbAwMsRzXcjr5X"
         Log.d("AppMock", "creating newClient with storePath="+configExt.storePath+"; bloxAddr="+configExt.bloxAddr)
         val client = Fulamobile.newClient(configExt)
+        Log.d("AppMock", "client created with id="+client.id())
         val privateForest = createPrivateForest(client)
+        Log.d("AppMock", "privateForest created=$privateForest")
         println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
         println(privateForest)
         var config = createRootDir(client, privateForest)
+        Log.d("AppMock", "config created. cid="+config.cid+" & private_ref="+config.private_ref)
         assertNotNull("cid should not be null", config.cid)
         assertNotNull("private_ref should not be null", config.private_ref)
         config = writeFile(client, config.cid, config.private_ref, "root/test.txt", "Hello, World!".toByteArray())
