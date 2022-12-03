@@ -38,7 +38,7 @@ jobs:
 
 
     - name: Test utils
-      working-directory: wnfslib/utils/
+      working-directory: ./wnfslib/utils/
       run: cargo test
 
     - name: Build
