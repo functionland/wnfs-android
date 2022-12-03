@@ -29,7 +29,7 @@ class WNFSTest {
         configExt.storePath = pathString
         val peerIdentity = Fulamobile.generateEd25519Key()
         configExt.identity = peerIdentity
-        configExt.bloxAddr = "/ip4/59.23.13.76/tcp/46640/p2p/QmRS9H18XHFrbmGKxi2TEBFz5ZzurkU9cbAwMsRzXcjr5X"
+        configExt.bloxAddr = "/ip4/127.0.0.1/tcp/4001/p2p/12D3KooWAv8pjA482i2XtRxB6Hei8eHZCkTau2kQVEUvWhxZbCj6"
         Log.d("AppMock", "creating newClient with storePath="+configExt.storePath+"; bloxAddr="+configExt.bloxAddr)
         val client = Fulamobile.newClient(configExt)
         Log.d("AppMock", "client created with id="+client.id())
