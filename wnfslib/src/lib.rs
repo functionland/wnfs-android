@@ -80,8 +80,9 @@ pub mod android {
                     "([BJ)[B",
                 )
                 .unwrap();
-    
+            trace!("**********************put_block put_fn done**************");        
             let dataJByteArray = vec_to_jbyteArray(self.env, bytes);
+            trace!("**********************put_block dataJByteArray done**************");
             let cidJByteArray = self.env
             .call_method_unchecked(
                 self.fula_client,
@@ -92,10 +93,14 @@ pub mod android {
                     JValue::from(dataJByteArray),
                 ],
             )
-            .unwrap()
+            .unwrap_or_else(|_err: String| {
+                trace!("**********************put_block first unwrap error************** {}",_err);
+            })
             .l()
-            .unwrap();
-
+            .unwrap_or_else(|_err: String| {
+                trace!("**********************put_block second unwrap error************** {}",_err);
+            });
+            trace!("**********************put_block cidJByteArray done**************");
             let cid = jbyteArray_to_vec(self.env, cidJByteArray.into_inner());
             trace!("**********************put_block finished**************");
             Ok(cid)
