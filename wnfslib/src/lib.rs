@@ -93,12 +93,12 @@ pub mod android {
                     JValue::from(dataJByteArray),
                 ],
             )
-            .unwrap_or_else(|_err: String| {
-                trace!("**********************put_block first unwrap error************** {}",_err);
+            .unwrap_or_else(|_err: jni::errors::Error| {
+                trace!("**********************put_block first unwrap error**************");
             })
             .l()
-            .unwrap_or_else(|_err: String| {
-                trace!("**********************put_block second unwrap error************** {}",_err);
+            .unwrap_or_else(|_err: jni::errors::Error| {
+                trace!("**********************put_block second unwrap error**************");
             });
             trace!("**********************put_block cidJByteArray done**************");
             let cid = jbyteArray_to_vec(self.env, cidJByteArray.into_inner());
