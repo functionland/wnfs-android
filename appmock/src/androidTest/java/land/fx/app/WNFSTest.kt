@@ -33,8 +33,14 @@ class WNFSTest {
         Log.d("AppMock", "creating newClient with storePath="+configExt.storePath+"; bloxAddr="+configExt.bloxAddr)
         val client = Fulamobile.newClient(configExt)
         Log.d("AppMock", "client created with id="+client.id())
-        //val sampleData = [152, 40, 24, 163, 24, 100, 24, 114, 24, 111, 24, 111, 24, 116, 24, 130, 24, 130, 0, 0, 24, 128, 24, 103, 24, 118, 24, 101, 24, 114, 24, 115, 24, 105, 24, 111, 24, 110, 24, 101, 24, 48, 24, 46, 24, 49, 24, 46, 24, 48, 24, 105, 24, 115, 24, 116, 24, 114, 24, 117, 24, 99, 24, 116, 24, 117, 24, 114, 24, 101, 24, 100, 24, 104, 24, 97, 24, 109, 24, 116]
-        val testPutCid = client.put("ehsan".toByteArray(),113)
+        val sampleData = arrayOf<Byte>(52, 40, 24, 63, 24, 100, 24, 114, 24, 111, 24, 111, 24, 116, 24, 30, 24, 30, 0, 0, 24, 28, 24, 103, 24, 118, 24, 101, 24, 114, 24, 115, 24, 105, 24, 111, 24, 110, 24, 101, 24, 48, 24, 46, 24, 49, 24, 46, 24, 48, 24, 105, 24, 115, 24, 116, 24, 114, 24, 117, 24, 99, 24, 116, 24, 117, 24, 114, 24, 101, 24, 100, 24, 104, 24, 97, 24, 109, 24, 116)
+        val b = ByteArray(sampleData.size)
+        for((index, element) in sampleData.withIndex()) {
+            b[index] = element
+        }
+        val codec = (113).toLong()
+        Log.d("AppMock", "sampleData is created")
+        val testPutCid = client.put(b,codec)
         Log.d("AppMock", "put test was successful=$testPutCid")
         val privateForest = createPrivateForest(client)
         Log.d("AppMock", "privateForest created=$privateForest")
