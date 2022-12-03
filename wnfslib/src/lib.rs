@@ -42,6 +42,7 @@ pub mod android {
 
         /// Retrieves an array of bytes from the block store with given CID.
         fn get_block(&self, cid: Vec<u8>) -> Result<Vec<u8>>{
+            trace!("**********************get_block started**************");
             let get_fn = self.env
                 .get_method_id(
                     self.fula_client,
@@ -65,11 +66,13 @@ pub mod android {
             .unwrap();
 
             let data = jbyteArray_to_vec(self.env, dataJByteArray.into_inner());
+            trace!("**********************get_block finished**************");
             Ok(data)
         }
 
         /// Stores an array of bytes in the block store.
         fn put_block(&self, bytes: Vec<u8>, codec: i64) -> Result<Vec<u8>>{
+            trace!("**********************put_block started**************");
             let put_fn = self.env
                 .get_method_id(
                     self.fula_client,
@@ -94,6 +97,7 @@ pub mod android {
             .unwrap();
 
             let cid = jbyteArray_to_vec(self.env, cidJByteArray.into_inner());
+            trace!("**********************put_block finished**************");
             Ok(cid)
         }
     }
@@ -109,11 +113,11 @@ pub mod android {
         _: JClass,
         jni_fula_client: JObject,
     ) -> jstring {
-        trace!("**********************cp0**************");
+        trace!("**********************createPrivateForest started**************");
         let store = JNIStore::new(env, jni_fula_client);
         let block_store = FFIFriendlyBlockStore::new(Box::new(store));
         let helper = &mut PrivateDirectoryHelper::new(block_store);
-        trace!("**********************cp1**************");
+        trace!("**********************createPrivateForest finished**************");
         serialize_cid(env, helper.synced_create_private_forest().unwrap()).into_inner()
     }
 
@@ -124,6 +128,7 @@ pub mod android {
         jni_fula_client: JObject,
         jni_cid: JString,
     ) -> jobject {
+        trace!("**********************createRootDirNative started**************");
         let store = JNIStore::new(env, jni_fula_client);
         let block_store = FFIFriendlyBlockStore::new(Box::new(store));
         let helper = &mut PrivateDirectoryHelper::new(block_store);
@@ -132,7 +137,7 @@ pub mod android {
         let forest = helper.synced_load_forest(forest_cid).unwrap();
         let (cid, private_ref) = helper.synced_init(forest);
         trace!("pref: {:?}", private_ref);
-
+        trace!("**********************createRootDirNative finished**************");
         serialize_config(env, cid, private_ref)
     }
 
@@ -146,6 +151,7 @@ pub mod android {
         jni_path_segments: JString,
         jni_content: jbyteArray,
     ) -> jobject {
+        trace!("**********************writeFileNative started**************");
         let store = JNIStore::new(env, jni_fula_client);
         let block_store = FFIFriendlyBlockStore::new(Box::new(store));
         let helper = &mut PrivateDirectoryHelper::new(block_store);
@@ -158,6 +164,7 @@ pub mod android {
         let path_segments = prepare_path_segments(env, jni_path_segments);
         let content = jbyteArray_to_vec(env, jni_content);
         let (cid, private_ref) = helper.synced_write_file(forest.to_owned(), root_dir, &path_segments, content);
+        trace!("**********************writeFileNative finished**************");
         serialize_config(env, cid, private_ref)
     }
 
@@ -170,6 +177,7 @@ pub mod android {
         jni_private_ref: JString,
         jni_path_segments: JString,
     ) -> jbyteArray {
+        trace!("**********************readFileNative started**************");
         let store = JNIStore::new(env, jni_fula_client);
         let block_store = FFIFriendlyBlockStore::new(Box::new(store));
         let helper = &mut PrivateDirectoryHelper::new(block_store);
@@ -180,6 +188,7 @@ pub mod android {
         let forest = helper.synced_load_forest(cid).unwrap();
         let root_dir = helper.synced_get_root_dir(forest.to_owned(), private_ref).unwrap();
         let path_segments = prepare_path_segments(env, jni_path_segments);
+        trace!("**********************readFileNative finished**************");
         vec_to_jbyteArray(env, helper.synced_read_file(forest.to_owned(), root_dir, &path_segments).unwrap())
     }
 
@@ -192,6 +201,7 @@ pub mod android {
         jni_private_ref: JString,
         jni_path_segments: JString,
     ) -> jstring {
+        trace!("**********************mkDirNative started**************");
         let store = JNIStore::new(env, jni_fula_client);
         let block_store = FFIFriendlyBlockStore::new(Box::new(store));
         let helper = &mut PrivateDirectoryHelper::new(block_store);
@@ -203,6 +213,7 @@ pub mod android {
         let root_dir = helper.synced_get_root_dir(forest.to_owned(), private_ref).unwrap();
         let path_segments = prepare_path_segments(env, jni_path_segments);
         let (cid, private_ref) = helper.synced_mkdir(forest.to_owned(), root_dir, &path_segments);
+        trace!("**********************mkDirNative finished**************");
         serialize_config(env, cid, private_ref)
     }
 
@@ -215,6 +226,7 @@ pub mod android {
         jni_private_ref: JString,
         jni_path_segments: JString,
     ) -> jstring {
+        trace!("**********************lsNative started**************");
         let store = JNIStore::new(env, jni_fula_client);
         let block_store = FFIFriendlyBlockStore::new(Box::new(store));
         let helper = &mut PrivateDirectoryHelper::new(block_store);
@@ -226,6 +238,7 @@ pub mod android {
         let root_dir = helper.synced_get_root_dir(forest.to_owned(), private_ref).unwrap();
         let path_segments = prepare_path_segments(env, jni_path_segments);
         let output = prepare_ls_output(helper.synced_ls_files(forest.to_owned(), root_dir, &path_segments));
+        trace!("**********************lsNative finished**************");
         env.new_string(output.join("\n")).
             expect("Failed to create new jstring").
             into_inner()
@@ -237,8 +250,10 @@ pub mod android {
         cid: Cid,
         private_ref: PrivateRef,
     ) -> jobject {
+        trace!("**********************serialize_config started**************");
         let config_cls = env.find_class("land/fx/wnfslib/Config").unwrap();
-
+        //let  handler_class = reinterpret_cast<jclass>(env.new_global_ref(config_cls));
+        trace!("**********************serialize_config config_cls set**************");
         let create_config_fn = env
             .get_static_method_id(
                 config_cls,
@@ -247,10 +262,10 @@ pub mod android {
             )
             .unwrap();
 
-
+        trace!("**********************serialize_config create_config_fn set**************");
         let cid = serialize_cid(env, cid);
         let private_ref = serialize_private_ref(env, private_ref);
-
+        trace!("**********************serialize_config almost finished**************");
         let config = env
         .call_static_method_unchecked(
              config_cls,
