@@ -305,9 +305,12 @@ pub mod android {
         env: JNIEnv,
         cid: Cid,
     ) -> JString {
-        env.new_string(cid.to_string()).
+        trace!("**********************serialize_cid started**************");
+        trace!("**********************serialize_cid cid={}",cid.to_string());
+        let a:JString = env.new_string(cid.to_string()).
             expect("Failed to serialize cid").
-            into()
+            into();
+        a
     }
 
     #[no_mangle]
