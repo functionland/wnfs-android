@@ -46,7 +46,7 @@ pub mod android {
                 .get_method_id(
                     self.fula_client,
                     "get",
-                    "([B;)[B;",
+                    "([B)[B",
                 )
                 .unwrap();
     
