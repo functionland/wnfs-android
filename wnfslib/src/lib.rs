@@ -109,6 +109,7 @@ pub mod android {
         _: JClass,
         jni_fula_client: JObject,
     ) -> jstring {
+        trace!("**********************cp0**************");
         let store = JNIStore::new(env, jni_fula_client);
         let block_store = FFIFriendlyBlockStore::new(Box::new(store));
         let helper = &mut PrivateDirectoryHelper::new(block_store);

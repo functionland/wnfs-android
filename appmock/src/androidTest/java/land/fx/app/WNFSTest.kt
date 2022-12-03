@@ -7,6 +7,7 @@ import androidx.test.rule.ActivityTestRule
 import fulamobile.Config
 import fulamobile.Fulamobile
 import land.fx.wnfslib.*
+import land.fx.wnfslib.initRustLogger
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -18,6 +19,7 @@ class WNFSTest {
     val mainActivityRule = ActivityTestRule(MainActivity::class.java)
     @Test
     fun wnfs_overall() {
+        initRustLogger()
         val appContext = InstrumentationRegistry
             .getInstrumentation()
             .targetContext
