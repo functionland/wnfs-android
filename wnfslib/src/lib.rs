@@ -43,6 +43,8 @@ pub mod android {
         /// Retrieves an array of bytes from the block store with given CID.
         fn get_block(&self, cid: Vec<u8>) -> Result<Vec<u8>>{
             trace!("**********************get_block started**************");
+            trace!("**********************get_block started**************");
+            trace!("**********************get_block bytes={:?}", &cid);
             let get_fn = self.env
                 .get_method_id(
                     self.fula_client,

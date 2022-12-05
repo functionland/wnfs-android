@@ -48,6 +48,8 @@ class WNFSTest {
         Log.d("AppMock", "sampleData is created")
         val testPutCid = client.put(b,codec)
         Log.d("AppMock", "put test was successful=$testPutCid")
+        val testData = client.get(testPutCid)
+        Log.d("AppMock", "get test was successful=$testData")
         val privateForest = createPrivateForest(client)
         Log.d("AppMock", "privateForest created=$privateForest")
         println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
