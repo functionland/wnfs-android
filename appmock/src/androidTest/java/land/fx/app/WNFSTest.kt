@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
-import fulamobile.Client
 import fulamobile.Config
 import fulamobile.Fulamobile
 import land.fx.wnfslib.*
@@ -18,36 +17,24 @@ import org.junit.runner.RunWith
 class WNFSTest {
     @get:Rule
     val mainActivityRule = ActivityTestRule(MainActivity::class.java)
-    private lateinit var configFula: Config
-    private lateinit var client: Client
-
     @Test
-    fun init_overall() {
+    fun wnfs_overall() {
         initRustLogger()
-        this.configFula = Config()
         val appContext = InstrumentationRegistry
             .getInstrumentation()
             .targetContext
         val pathString = "${appContext.cacheDir}/tmp"
-
-        this.configFula.storePath = pathString
+        //val path = Path(pathString)
+        val configExt = Config()
+        configExt.storePath = pathString
         val peerIdentity = Fulamobile.generateEd25519Key()
-        this.configFula.identity = peerIdentity
-        this.configFula.bloxAddr = ""
-        this.configFula.exchange = "noop"
+        configExt.identity = peerIdentity
+        configExt.bloxAddr = ""
+        configExt.exchange = "noop"
 
-        Log.d("AppMock", "creating newClient with storePath="+this.configFula.storePath+"; bloxAddr="+this.configFula.bloxAddr)
-        this.client = Fulamobile.newClient(this.configFula)
-        Log.d("AppMock", "client created with id="+this.client.id())
-        assertNotNull("client.id should not be null", this.client.id())
-    }
-
-    @Test
-    fun fula_overall() {
-        if(!(::client.isInitialized)) {
-            init_overall()
-        }
-
+        Log.d("AppMock", "creating newClient with storePath="+configExt.storePath+"; bloxAddr="+configExt.bloxAddr)
+        val client = Fulamobile.newClient(configExt)
+        Log.d("AppMock", "client created with id="+client.id())
         val sampleData = arrayOf<Byte>(152.toByte(), 40, 24,
             163.toByte(), 24, 100, 24, 114, 24, 111, 24, 111, 24, 116, 24,
             130.toByte(), 24,
@@ -59,41 +46,27 @@ class WNFSTest {
         }
         val codec = (113).toLong()
         Log.d("AppMock", "sampleData is created")
-
-        val testPutCid = this.client.put(b,codec)
+        val testPutCid = client.put(b,codec)
         Log.d("AppMock", "put test was successful=$testPutCid")
-        assertNotNull("Put cid should not be null", testPutCid)
-
-        val testData = this.client.get(testPutCid)
+        val testData = client.get(testPutCid)
         Log.d("AppMock", "get test was successful=$testData")
-        assert(testData contentEquals b)
-    }
-    fun wnfs_overall() {
-        initRustLogger()
-
-        val privateForest = createPrivateForest(this.client)
+        val privateForest = createPrivateForest(client)
         Log.d("AppMock", "privateForest created=$privateForest")
         println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
         println(privateForest)
-
-        var config = createRootDir(this.client, privateForest)
+        var config = createRootDir(client, privateForest)
         Log.d("AppMock", "config created. cid="+config.cid+" & private_ref="+config.private_ref)
         assertNotNull("cid should not be null", config.cid)
         assertNotNull("private_ref should not be null", config.private_ref)
-
-        config = writeFile(this.client, config.cid, config.private_ref, "root/test.txt", "Hello, World!".toByteArray())
+        config = writeFile(client, config.cid, config.private_ref, "root/test.txt", "Hello, World!".toByteArray())
         assertNotNull("cid should not be null", config.cid)
-
-        config = mkdir(this.client,  config.cid, config.private_ref, "root/test1")
-        val fileNames = ls(this.client, config.cid, config.private_ref, "root")
+        config = mkdir(client,  config.cid, config.private_ref, "root/test1")
+        val fileNames = ls(client, config.cid, config.private_ref, "root")
         assertEquals(fileNames, "test.txt\ntest1")
-
-        val content = readFile(this.client, config.cid, config.private_ref, "root/test.txt")
+        val content = readFile(client, config.cid, config.private_ref, "root/test.txt")
         assert(content contentEquals "Hello, World!".toByteArray())
-
-        config = rm(this.client, config.cid, config.private_ref, "root/test.txt")
-
-        val content2 = readFile(this.client, config.cid, config.private_ref, "root/test.txt")
+        config = rm(client, config.cid, config.private_ref, "root/test.txt")
+        val content2 = readFile(client, config.cid, config.private_ref, "root/test.txt")
         assertNull(content2)
     }
 }
