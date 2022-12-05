@@ -30,6 +30,8 @@ class WNFSTest {
         val peerIdentity = Fulamobile.generateEd25519Key()
         configExt.identity = peerIdentity
         configExt.bloxAddr = ""
+        configExt.exchange = "noop"
+
         Log.d("AppMock", "creating newClient with storePath="+configExt.storePath+"; bloxAddr="+configExt.bloxAddr)
         val client = Fulamobile.newClient(configExt)
         Log.d("AppMock", "client created with id="+client.id())
