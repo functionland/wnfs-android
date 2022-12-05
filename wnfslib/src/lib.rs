@@ -87,6 +87,8 @@ pub mod android {
             trace!("**********************put_block put_fn done**************");        
             let dataJByteArray = vec_to_jbyteArray(self.env, bytes);
             trace!("**********************put_block dataJByteArray done**************");
+            trace!("**********************put_block LVALUE_dataJByteArray={:?}", &JValue::from(dataJByteArray));
+            trace!("**********************put_block JVALUE_codec={:?}", &JValue::from(codec));
             let cidJByteArray = self.env
             .call_method_unchecked(
                 self.fula_client,
