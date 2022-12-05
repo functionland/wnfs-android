@@ -43,6 +43,8 @@ pub mod android {
         /// Retrieves an array of bytes from the block store with given CID.
         fn get_block(&self, cid: Vec<u8>) -> Result<Vec<u8>>{
             trace!("**********************get_block started**************");
+            trace!("**********************get_block started**************");
+            trace!("**********************get_block bytes={:?}", &cid);
             let get_fn = self.env
                 .get_method_id(
                     self.fula_client,
@@ -73,6 +75,8 @@ pub mod android {
         /// Stores an array of bytes in the block store.
         fn put_block(&self, bytes: Vec<u8>, codec: i64) -> Result<Vec<u8>>{
             trace!("**********************put_block started**************");
+            trace!("**********************put_block coded={}", codec.to_string());
+            trace!("**********************put_block bytes={:?}", &bytes);
             let put_fn = self.env
                 .get_method_id(
                     self.fula_client,
@@ -83,6 +87,8 @@ pub mod android {
             trace!("**********************put_block put_fn done**************");        
             let dataJByteArray = vec_to_jbyteArray(self.env, bytes);
             trace!("**********************put_block dataJByteArray done**************");
+            trace!("**********************put_block LVALUE_dataJByteArray={:?}", &JValue::from(dataJByteArray));
+            trace!("**********************put_block JVALUE_codec={:?}", &JValue::from(codec));
             let cidJByteArray = self.env
             .call_method_unchecked(
                 self.fula_client,
@@ -95,12 +101,12 @@ pub mod android {
             )
             .unwrap_or_else(|_err: jni::errors::Error| {
                 trace!("**********************put_block first unwrap error**************");
-                panic!("{}",_err)
+                panic!("HERE1: {}",_err)
             })
             .l()
             .unwrap_or_else(|_err: jni::errors::Error| {
                 trace!("**********************put_block second unwrap error**************");
-                panic!("{}",_err)
+                panic!("HERE2: {}",_err)
             });
             trace!("**********************put_block cidJByteArray done**************");
             let cid = jbyteArray_to_vec(self.env, cidJByteArray.into_inner());
@@ -305,9 +311,12 @@ pub mod android {
         env: JNIEnv,
         cid: Cid,
     ) -> JString {
-        env.new_string(cid.to_string()).
+        trace!("**********************serialize_cid started**************");
+        trace!("**********************serialize_cid cid={}",cid.to_string());
+        let a:JString = env.new_string(cid.to_string()).
             expect("Failed to serialize cid").
-            into()
+            into();
+        a
     }
 
     #[no_mangle]
