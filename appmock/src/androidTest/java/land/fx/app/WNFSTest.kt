@@ -3,7 +3,7 @@ package land.fx.app
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.rule.ActivityTestRule
+import androidx.test.ext.junit.rules.ActivityScenarioRule
 import fulamobile.Config
 import fulamobile.Fulamobile
 import land.fx.wnfslib.*
@@ -15,10 +15,11 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class WNFSTest {
-    @get:Rule
-    val mainActivityRule = ActivityTestRule(MainActivity::class.java)
+    @Rule
+    val mainActivityRule = ActivityScenarioRule(MainActivity::class.java)
     @Test
     fun wnfs_overall() {
+        val scenario = mainActivityRule.scenario;
         initRustLogger()
         val appContext = InstrumentationRegistry
             .getInstrumentation()
