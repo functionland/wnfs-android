@@ -13,7 +13,7 @@ rand = "0.8.5"
 libipld = { version = "0.15", features = ["dag-cbor", "derive", "serde-codec"] }
 kv = "0.24.0"
 async-std = "1.12.0"
-multihash = "0.16.3"
+multihash = "0.18.0"
 rand_core = "0.6.4"
 serde = "1.0.147"
 anyhow = "1.0.66"
