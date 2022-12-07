@@ -67,7 +67,7 @@ impl<'a> PrivateDirectoryHelper<'a> {
     pub async fn get_root_dir(&mut self, forest: Rc<PrivateForest>, private_ref: PrivateRef) -> Result<Rc<PrivateDirectory>> {
         // Fetch and decrypt root directory from the private forest using provided private ref.
         forest
-        .get(&private_ref, &mut self.store)
+        .get(&private_ref, PrivateForest::resolve_lowest, &mut self.store)
         .await
         .unwrap().unwrap().as_dir()
     }
@@ -80,16 +80,16 @@ impl<'a> PrivateDirectoryHelper<'a> {
             &mut self.rng,
         ));
 
-        let PrivateOpResult { root_dir, hamt, .. } = dir
+        let PrivateOpResult { root_dir, forest, .. } = dir
             .mkdir(&["root".into()], true, Utc::now(), forest, &mut self.store,&mut self.rng)
             .await
             .unwrap();
 
-        (self.update_forest(hamt).await.unwrap(), root_dir.header.get_private_ref().unwrap())
+        (self.update_forest(forest).await.unwrap(), root_dir.header.get_private_ref())
     }
 
     pub async fn write_file(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String], content: Vec<u8>) -> (Cid, PrivateRef) {
-        let PrivateOpResult { hamt, root_dir, .. } = root_dir
+        let PrivateOpResult { forest, root_dir, .. } = root_dir
             .write(
                 path_segments,
                 true,
@@ -101,7 +101,7 @@ impl<'a> PrivateDirectoryHelper<'a> {
             )
             .await
             .unwrap();
-        (self.update_forest(hamt).await.unwrap(), root_dir.header.get_private_ref().unwrap())
+        (self.update_forest(forest).await.unwrap(), root_dir.header.get_private_ref())
 
     }
 
@@ -117,12 +117,12 @@ impl<'a> PrivateDirectoryHelper<'a> {
 
 
     pub async fn mkdir(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> (Cid, PrivateRef) {
-        let PrivateOpResult { hamt, root_dir, .. } = root_dir
+        let PrivateOpResult { forest, root_dir, .. } = root_dir
             .mkdir(path_segments, true, Utc::now(), forest, &mut self.store,&mut self.rng)
             .await
             .unwrap();
 
-        (self.update_forest(hamt).await.unwrap(), root_dir.header.get_private_ref().unwrap())
+        (self.update_forest(forest).await.unwrap(), root_dir.header.get_private_ref())
     }
 
     pub async fn ls_files(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> Vec<(String, Metadata)> {
