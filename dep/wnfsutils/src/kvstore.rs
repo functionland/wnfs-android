@@ -1,5 +1,5 @@
 use kv::*;
-use multihash::MultihashDigest;
+
 use std::convert::TryInto;
 use libipld::{
     cid::Version,
