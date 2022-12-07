@@ -8,8 +8,8 @@ name = "wnfslib"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-wnfs = "0.1.9"
-wnfsutils = { git = "https://github.com/functionland/wnfs-utils" }
+wnfs = {path = "/home/ehsan6sha/wnfs-android/dep/wnfs" }
+wnfsutils = {path = "/home/ehsan6sha/wnfs-android/dep/wnfsutils" }
 anyhow = "1.0.66"
 serde = "1.0.147"
 serde_json = "1.0.87"
