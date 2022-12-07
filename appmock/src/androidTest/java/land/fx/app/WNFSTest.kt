@@ -24,6 +24,7 @@ class WNFSTest {
             .getInstrumentation()
             .targetContext
         val pathString = "${appContext.cacheDir}/tmp"
+        Log.d("AppMock", "tmp dir==$pathString")
         //val path = Path(pathString)
         val configExt = Config()
         configExt.storePath = pathString

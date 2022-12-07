@@ -102,7 +102,6 @@ impl<'a> PrivateDirectoryHelper<'a> {
             .await
             .unwrap();
         (self.update_forest(forest).await.unwrap(), root_dir.header.get_private_ref())
-
     }
 
     pub async fn read_file(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> Option<Vec<u8>> {
@@ -119,6 +118,16 @@ impl<'a> PrivateDirectoryHelper<'a> {
     pub async fn mkdir(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> (Cid, PrivateRef) {
         let PrivateOpResult { forest, root_dir, .. } = root_dir
             .mkdir(path_segments, true, Utc::now(), forest, &mut self.store,&mut self.rng)
+            .await
+            .unwrap();
+
+        (self.update_forest(forest).await.unwrap(), root_dir.header.get_private_ref())
+    }
+
+
+    pub async fn rm(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> (Cid, PrivateRef) {
+        let PrivateOpResult { forest, root_dir, .. } = root_dir
+            .rm(path_segments, true, forest, &mut self.store,&mut self.rng)
             .await
             .unwrap();
 
@@ -187,6 +196,13 @@ impl<'a> PrivateDirectoryHelper<'a> {
         return runtime.block_on(self.mkdir(forest, root_dir, path_segments));
     }
 
+    pub fn synced_rm(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> (Cid, PrivateRef)
+    {
+        let runtime =
+            tokio::runtime::Runtime::new().expect("Unable to create a runtime");
+        return runtime.block_on(self.rm(forest, root_dir, path_segments));
+    }
+
     pub fn synced_ls_files(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> Vec<(String, Metadata)>
     {
         let runtime =
@@ -239,6 +255,11 @@ mod private_tests {
         assert_eq!(ls_result.get(1).unwrap().0, "hi");
         let content = helper.read_file(forest.to_owned(), root_dir.to_owned(), &["root".into(), "hello".into(), "world.txt".into()]).await.unwrap();
         assert_eq!(content, b"hello, world!".to_vec());
+        let (new_cid, private_ref) = helper.rm(forest, root_dir,  &["root".into(), "hello".into(), "world.txt".into()]).await;
+        let forest = helper.load_forest(new_cid).await.unwrap();
+        let root_dir = helper.get_root_dir(forest.to_owned(), private_ref.to_owned()).await.unwrap();
+        let content = helper.read_file(forest.to_owned(), root_dir.to_owned(), &["root".into(), "hello".into(), "world.txt".into()]).await;
+        assert_eq!(content, None);
         let private_ref_serialized = serde_json::to_string(&private_ref).unwrap();
         println!("private ref: \n{}", private_ref_serialized);
     }

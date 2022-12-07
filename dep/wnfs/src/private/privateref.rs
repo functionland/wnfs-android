@@ -9,7 +9,7 @@ use serde::{de::Error as DeError, ser::Error as SerError, Deserialize, Serialize
 //--------------------------------------------------------------------------------------------------
 
 /// PrivateRef holds the information to fetch associated node from a private forest and decrypt it if it is present.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PrivateRef {
     /// Sha3-256 hash of saturated namefilter.
     pub(crate) saturated_name_hash: HashOutput,
