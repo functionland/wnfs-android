@@ -76,7 +76,6 @@ pub mod android {
         fn put_block(&self, bytes: Vec<u8>, codec: i64) -> Result<Vec<u8>>{
             trace!("**********************put_block started**************");
             trace!("**********************put_block coded={}", codec.to_string());
-            trace!("**********************put_block bytes={:?}", &bytes);
             let put_fn = self.env
                 .get_method_id(
                     self.fula_client,
@@ -87,7 +86,6 @@ pub mod android {
             trace!("**********************put_block put_fn done**************");        
             let dataJByteArray = vec_to_jbyteArray(self.env, bytes);
             trace!("**********************put_block dataJByteArray done**************");
-            trace!("**********************put_block LVALUE_dataJByteArray={:?}", &JValue::from(dataJByteArray));
             trace!("**********************put_block JVALUE_codec={:?}", &JValue::from(codec));
             let cidJByteArray = self.env
             .call_method_unchecked(
