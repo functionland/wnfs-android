@@ -1,6 +1,5 @@
 package land.fx.wnfslib;
 
-import fulamobile.Client;
 
 data class Config(
    val cid: String,
@@ -10,6 +9,12 @@ data class Config(
      fun create(cid: String, private_ref: String) : Config = Config(cid, private_ref)
   }
 }
+
+interface Client {
+    fun put(data: ByteArray, codec: Long): ByteArray
+    fun get(cid: ByteArray): ByteArray
+}
+
 
 private external fun createPrivateForestNative(fulaClient: Client): String
 

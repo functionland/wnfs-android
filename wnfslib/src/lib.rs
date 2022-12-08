@@ -26,11 +26,8 @@ pub mod android {
     }
 
     impl<'a> JNIStore<'a> {
-        fn new(env: JNIEnv<'a>, fula_client: JObject<'a>) -> KVBlockStore {
-            KVBlockStore::new(
-                "/data/user/0/land.fx.app/cache/tmp1".into(),
-                libipld::IpldCodec::DagCbor,
-            )
+        fn new(env: JNIEnv<'a>, fula_client: JObject<'a>) -> Self {
+            Self { env: env, fula_client: fula_client }
         }
     }
 
