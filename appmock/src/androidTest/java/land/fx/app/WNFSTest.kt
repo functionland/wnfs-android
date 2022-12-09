@@ -1,24 +1,17 @@
 package land.fx.app
 
-import android.util.Base64
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
-import android.content.Context
-import io.ipfs.cid.Cid
-import io.ipfs.multihash.Multihash
+import fulamobile.Config
+import fulamobile.Fulamobile
 import land.fx.wnfslib.*
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.security.MessageDigest
 import java.io.File
-
-
-import fulamobile.Config
-import fulamobile.Fulamobile
 
 
 @RunWith(AndroidJUnit4::class)
@@ -43,6 +36,7 @@ class WNFSTest {
         val pathString = "${appContext.cacheDir}/tmp"
         Log.d("AppMock", "tmp dir==$pathString")
         //val path = Path(pathString)
+
         val configExt = Config()
         configExt.storePath = pathString
         val peerIdentity = Fulamobile.generateEd25519Key()
@@ -81,19 +75,20 @@ class WNFSTest {
         assertNotNull("private_ref should not be null", config.private_ref)
 
         var testContent = "Hello, World!".toByteArray()
-        var file = File("test.txt")
-        
+
+        val file = File(pathString, "test.txt")
         // create a new file
         val isNewFileCreated = file.createNewFile()
-        
+
         if(isNewFileCreated){
             Log.d("AppMock", "testfile is created successfully.")
         } else{
             Log.d("AppMock", "testfile already exists.")
         }
         assertTrue(isNewFileCreated)
-
         file.writeBytes(testContent)
+
+
         config = writeFileFromPath(client, config.cid, config.private_ref, "root/testfrompath.txt", "test.txt")
         assertNotNull("cid should not be null", config.cid)
         Log.d("AppMock", "config writeFile. cid="+config.cid+" & private_ref="+config.private_ref)
