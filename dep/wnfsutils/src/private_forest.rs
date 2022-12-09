@@ -4,7 +4,7 @@
 use chrono::Utc;
 use libipld::Cid;
 use rand::{thread_rng, rngs::ThreadRng};
-use std::{rc::Rc};
+use std::{rc::Rc, fs::File, io::Read};
 use wnfs::{
     dagcbor,
     private::{PrivateForest, PrivateRef},
@@ -86,6 +86,20 @@ impl<'a> PrivateDirectoryHelper<'a> {
             .unwrap();
 
         (self.update_forest(forest).await.unwrap(), root_dir.header.get_private_ref())
+    }
+
+    fn get_file_as_byte_vec(&mut self, filename: &String) -> Vec<u8> {
+        let mut f = File::open(&filename).expect("no file found");
+        let metadata = std::fs::metadata(&filename).expect("unable to read metadata");
+        let mut buffer = vec![0; metadata.len() as usize];
+        f.read(&mut buffer).expect("buffer overflow");
+    
+        buffer
+    }
+
+    pub async fn write_file_from_path(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String], filename: &String) -> (Cid, PrivateRef) {
+        let content: Vec<u8> = self.get_file_as_byte_vec(filename);
+        self.write_file(forest, root_dir, path_segments, content).await
     }
 
     pub async fn write_file(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String], content: Vec<u8>) -> (Cid, PrivateRef) {
@@ -173,6 +187,13 @@ impl<'a> PrivateDirectoryHelper<'a> {
         let runtime =
             tokio::runtime::Runtime::new().expect("Unable to create a runtime");
         return runtime.block_on(self.init(forest));
+    }
+
+    pub fn synced_write_file_from_path(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String], filename: &String) -> (Cid, PrivateRef)
+    {
+        let runtime =
+            tokio::runtime::Runtime::new().expect("Unable to create a runtime");
+        return runtime.block_on(self.write_file_from_path(forest, root_dir, path_segments, filename));
     }
 
     pub fn synced_write_file(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String], content: Vec<u8>) -> (Cid, PrivateRef)

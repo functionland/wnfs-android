@@ -20,6 +20,8 @@ private external fun createPrivateForestNative(fulaClient: Client): String
 
 private external fun createRootDirNative(fulaClient: Client, cid: String): Config
 
+private external fun writeFileFromPathNative(fulaClient: Client, cid: String, privateRef: String, path: String, filename: String): Config
+
 private external fun writeFileNative(fulaClient: Client, cid: String, privateRef: String, path: String, content: ByteArray): Config
 
 private external fun lsNative(fulaClient: Client, cid: String, privateRef: String, path: String): String
@@ -36,6 +38,10 @@ fun createPrivateForest(fulaClient: Client): String {
 
 fun createRootDir(fulaClient: Client, cid: String): Config {
    return createRootDirNative(fulaClient, cid)
+}
+
+fun writeFileFromPath(fulaClient: Client, cid: String, privateRef: String, path: String, filename: String): Config {
+   return writeFileFromPathNative(fulaClient, cid, privateRef, path, filename)
 }
 
 fun writeFile(fulaClient: Client, cid: String, privateRef: String, path: String, content: ByteArray): Config {

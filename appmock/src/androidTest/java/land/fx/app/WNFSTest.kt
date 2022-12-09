@@ -1,12 +1,11 @@
 package land.fx.app
 
-import android.content.SharedPreferences
-import android.preference.PreferenceManager
 import android.util.Base64
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
+import android.content.Context
 import io.ipfs.cid.Cid
 import io.ipfs.multihash.Multihash
 import land.fx.wnfslib.*
@@ -15,6 +14,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.security.MessageDigest
+import java.io.File
+
 
 import fulamobile.Config
 import fulamobile.Fulamobile
@@ -79,6 +80,33 @@ class WNFSTest {
         assertNotNull("cid should not be null", config.cid)
         assertNotNull("private_ref should not be null", config.private_ref)
 
+        var testContent = "Hello, World!".toByteArray()
+        var file = File("test.txt")
+        
+        // create a new file
+        val isNewFileCreated = file.createNewFile()
+        
+        if(isNewFileCreated){
+            Log.d("AppMock", "testfile is created successfully.")
+        } else{
+            Log.d("AppMock", "testfile already exists.")
+        }
+        assertTrue(isNewFileCreated)
+
+        file.writeBytes(testContent)
+        config = writeFileFromPath(client, config.cid, config.private_ref, "root/testfrompath.txt", "test.txt")
+        assertNotNull("cid should not be null", config.cid)
+        Log.d("AppMock", "config writeFile. cid="+config.cid+" & private_ref="+config.private_ref)
+
+        val contentfrompath = readFile(client, config.cid, config.private_ref, "root/testfrompath.txt")
+        assert(contentfrompath contentEquals "Hello, World!".toByteArray())
+        Log.d("AppMock", "readFileFromPath. content="+contentfrompath.toString())
+
+        config = rm(client, config.cid, config.private_ref, "root/testfrompath.txt")
+        val content2 = readFile(client, config.cid, config.private_ref, "root/testfrompath.txt")
+        assertNull(content2)
+
+
         config = writeFile(client, config.cid, config.private_ref, "root/test.txt", "Hello, World!".toByteArray())
         assertNotNull("cid should not be null", config.cid)
         Log.d("AppMock", "config writeFile. cid="+config.cid+" & private_ref="+config.private_ref)
@@ -94,8 +122,5 @@ class WNFSTest {
         assert(content contentEquals "Hello, World!".toByteArray())
         Log.d("AppMock", "readFile. content="+content.toString())
 
-        config = rm(client, config.cid, config.private_ref, "root/test.txt")
-        val content2 = readFile(client, config.cid, config.private_ref, "root/test.txt")
-        assertNull(content2)
     }
 }
