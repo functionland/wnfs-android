@@ -22,7 +22,7 @@ import fulamobile.Fulamobile
 
 @RunWith(AndroidJUnit4::class)
 class WNFSTest {
-    class MockFulaClient(private val fulaClient: fulamobile.Client): land.fx.wnfslib.Client{
+    class ConvertFulaClient(private val fulaClient: fulamobile.Client): land.fx.wnfslib.Client{
         override fun put(data: ByteArray, codec: Long): ByteArray{
             return fulaClient.put(data, codec)
         }
@@ -50,7 +50,7 @@ class WNFSTest {
 
         Log.d("AppMock", "creating newClient with storePath="+configExt.storePath+"; bloxAddr="+configExt.bloxAddr)
         val fulaClient = Fulamobile.newClient(configExt)
-        val client = MockFulaClient(fulaClient)
+        val client = ConvertFulaClient(fulaClient)
         Log.d("AppMock", "client created with id="+fulaClient.id())
         
         /* 
