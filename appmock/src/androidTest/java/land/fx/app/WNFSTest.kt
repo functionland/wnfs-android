@@ -27,6 +27,7 @@ class WNFSTest {
             return fulaClient.put(data, codec)
         }
         override fun get(cid: ByteArray): ByteArray{
+
             return fulaClient.get(cid)
         }
     }
@@ -71,17 +72,28 @@ class WNFSTest {
         Log.d("AppMock", "privateForest created=$privateForest")
         println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
         println(privateForest)
+
+
         var config = createRootDir(client, privateForest)
-        Log.d("AppMock", "config created. cid="+config.cid+" & private_ref="+config.private_ref)
+        Log.d("AppMock", "config crecreateRootDirated. cid="+config.cid+" & private_ref="+config.private_ref)
         assertNotNull("cid should not be null", config.cid)
         assertNotNull("private_ref should not be null", config.private_ref)
+
         config = writeFile(client, config.cid, config.private_ref, "root/test.txt", "Hello, World!".toByteArray())
         assertNotNull("cid should not be null", config.cid)
+        Log.d("AppMock", "config writeFile. cid="+config.cid+" & private_ref="+config.private_ref)
+
         config = mkdir(client,  config.cid, config.private_ref, "root/test1")
+        Log.d("AppMock", "config mkdir. cid="+config.cid+" & private_ref="+config.private_ref)
+
         val fileNames = ls(client, config.cid, config.private_ref, "root")
         assertEquals(fileNames, "test.txt\ntest1")
+        Log.d("AppMock", "ls. fileNames="+fileNames)
+
         val content = readFile(client, config.cid, config.private_ref, "root/test.txt")
         assert(content contentEquals "Hello, World!".toByteArray())
+        Log.d("AppMock", "readFile. content="+content.toString())
+
         config = rm(client, config.cid, config.private_ref, "root/test.txt")
         val content2 = readFile(client, config.cid, config.private_ref, "root/test.txt")
         assertNull(content2)
