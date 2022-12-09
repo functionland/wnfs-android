@@ -156,7 +156,7 @@ pub mod android {
         jni_path_segments: JString,
         jni_filename: JString,
     ) -> jobject {
-        trace!("**********************writeFileNative started**************");
+        trace!("**********************writeFileFromPathNative started**************");
         let store = JNIStore::new(env, jni_fula_client);
         let block_store = FFIFriendlyBlockStore::new(Box::new(store));
         let helper = &mut PrivateDirectoryHelper::new(block_store);
@@ -177,8 +177,44 @@ pub mod android {
 
         let (cid, private_ref) =
             helper.synced_write_file_from_path(forest.to_owned(), root_dir, &path_segments, &filename);
-        trace!("**********************writeFileNative finished**************");
+        trace!("**********************writeFileFromPathNative finished**************");
         serialize_config(env, cid, private_ref)
+    }
+
+    #[no_mangle]
+    pub extern "C" fn Java_land_fx_wnfslib_LibKt_readFileToPathNative(
+        env: JNIEnv,
+        _: JClass,
+        jni_fula_client: JObject,
+        jni_cid: JString,
+        jni_private_ref: JString,
+        jni_path_segments: JString,
+        jni_filename: JString,
+    ) -> jstring {
+        trace!("**********************readFileToPathNative started**************");
+        let store = JNIStore::new(env, jni_fula_client);
+        let block_store = FFIFriendlyBlockStore::new(Box::new(store));
+        let helper = &mut PrivateDirectoryHelper::new(block_store);
+
+        let cid = deserialize_cid(env, jni_cid);
+        let private_ref = deserialize_private_ref(env, jni_private_ref);
+
+        let forest = helper.synced_load_forest(cid).unwrap();
+        let root_dir = helper
+            .synced_get_root_dir(forest.to_owned(), private_ref)
+            .unwrap();
+        let path_segments = prepare_path_segments(env, jni_path_segments);
+        let filename: String = env
+            .get_string(jni_filename)
+            .expect("Failed to parse input path segments")
+            .into();
+        trace!("**********************readFileToPathNative finished**************");
+        let result: String = helper.synced_read_file_to_path(forest.to_owned(), root_dir, &path_segments, &filename);
+        let a: JString = env
+            .new_string(result)
+            .expect("Failed to serialize result")
+            .into();
+        a
     }
 
     #[no_mangle]

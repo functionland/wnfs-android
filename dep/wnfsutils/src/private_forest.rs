@@ -118,6 +118,17 @@ impl<'a> PrivateDirectoryHelper<'a> {
         (self.update_forest(forest).await.unwrap(), root_dir.header.get_private_ref())
     }
 
+    pub async fn read_file_to_path(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String], filename: &String) -> String {
+        let filecontent = self.read_file(forest, root_dir, path_segments);
+        let result = root_dir
+            .read(path_segments, true, forest, &mut self.store)
+            .await;
+        match result {
+            Ok(res) => Some(res.result),
+            Err(_) => None
+        }
+    }
+
     pub async fn read_file(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> Option<Vec<u8>> {
         let result = root_dir
             .read(path_segments, true, forest, &mut self.store)
