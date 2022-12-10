@@ -1,6 +1,6 @@
 name: Build the lib
 
-on: [push]
+on: [release]
 
 env:
   CARGO_TERM_COLOR: always
