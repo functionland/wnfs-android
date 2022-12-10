@@ -8,11 +8,11 @@ name = "wnfslib"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-wnfs = "0.1.9"
-wnfsutils = { git = "https://github.com/functionland/wnfs-utils" }
+wnfs = {path = "../dep/wnfs" }
+wnfsutils = {path = "../dep/wnfsutils" }
 anyhow = "1.0.66"
-serde = "1.0.147"
-serde_json = "1.0.87"
+serde = "1.0.149"
+serde_json = "1.0.89"
 chrono = "0.4.22"
 crc32fast = "1.3.2"
 env_logger = "0.9.0"
@@ -22,7 +22,7 @@ url = { version = "2.2.2", features = ["serde"] }
 openssl = { version = "0.10.35", features = ["vendored"] }
 tokio = { version = "1", features = ["full"] }
 rand = "0.8.5"
-libipld = "0.14.0"
+libipld = { version = "0.15", features = ["dag-cbor", "derive", "serde-codec"] }
 kv = "0.24.0"
 
 [target.'cfg(target_os="android")'.dependencies]

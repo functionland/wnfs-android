@@ -1,6 +1,5 @@
 package land.fx.wnfslib;
 
-import fulamobile.Client;
 
 data class Config(
    val cid: String,
@@ -11,9 +10,17 @@ data class Config(
   }
 }
 
+interface Client {
+    fun put(data: ByteArray, codec: Long): ByteArray
+    fun get(cid: ByteArray): ByteArray
+}
+
+
 private external fun createPrivateForestNative(fulaClient: Client): String
 
 private external fun createRootDirNative(fulaClient: Client, cid: String): Config
+
+private external fun writeFileFromPathNative(fulaClient: Client, cid: String, privateRef: String, path: String, filename: String): Config
 
 private external fun writeFileNative(fulaClient: Client, cid: String, privateRef: String, path: String, content: ByteArray): Config
 
@@ -23,6 +30,8 @@ private external fun mkdirNative(fulaClient: Client, cid: String, privateRef: St
 
 private external fun rmNative(fulaClient: Client, cid: String, privateRef: String, path: String): Config
 
+private external fun readFileToPathNative(fulaClient: Client, cid: String, privateRef: String, path: String, filename: String): String
+
 private external fun readFileNative(fulaClient: Client, cid: String, privateRef: String, path: String): ByteArray?
 
 fun createPrivateForest(fulaClient: Client): String {
@@ -31,6 +40,10 @@ fun createPrivateForest(fulaClient: Client): String {
 
 fun createRootDir(fulaClient: Client, cid: String): Config {
    return createRootDirNative(fulaClient, cid)
+}
+
+fun writeFileFromPath(fulaClient: Client, cid: String, privateRef: String, path: String, filename: String): Config {
+   return writeFileFromPathNative(fulaClient, cid, privateRef, path, filename)
 }
 
 fun writeFile(fulaClient: Client, cid: String, privateRef: String, path: String, content: ByteArray): Config {
@@ -47,6 +60,10 @@ fun mkdir(fulaClient: Client, cid: String, privateRef: String, path: String): Co
 
 fun rm(fulaClient: Client, cid: String, privateRef: String, path: String): Config {
    return rmNative(fulaClient, cid, privateRef, path)
+}
+
+fun readFileToPath(fulaClient: Client, cid: String, privateRef: String, path: String, filename: String): String {
+   return readFileToPathNative(fulaClient, cid, privateRef, path, filename)
 }
 
 fun readFile(fulaClient: Client, cid: String, privateRef: String, path: String): ByteArray? {

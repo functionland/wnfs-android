@@ -1,6 +1,6 @@
 name: Build the lib
 
-on: [push]
+on: [release]
 
 env:
   CARGO_TERM_COLOR: always
@@ -35,11 +35,6 @@ jobs:
 
     - name: Install Cargo targets
       run: rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android
-
-
-    - name: Test utils
-      working-directory: ./wnfslib/utils/
-      run: cargo test
 
     - name: Build
       run: ./gradlew lib:assemble
