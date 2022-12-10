@@ -30,6 +30,8 @@ private external fun mkdirNative(fulaClient: Client, cid: String, privateRef: St
 
 private external fun rmNative(fulaClient: Client, cid: String, privateRef: String, path: String): Config
 
+private external fun readFileToPathNative(fulaClient: Client, cid: String, privateRef: String, path: String, filename: String): String
+
 private external fun readFileNative(fulaClient: Client, cid: String, privateRef: String, path: String): ByteArray?
 
 fun createPrivateForest(fulaClient: Client): String {
@@ -58,6 +60,10 @@ fun mkdir(fulaClient: Client, cid: String, privateRef: String, path: String): Co
 
 fun rm(fulaClient: Client, cid: String, privateRef: String, path: String): Config {
    return rmNative(fulaClient, cid, privateRef, path)
+}
+
+fun readFileToPath(fulaClient: Client, cid: String, privateRef: String, path: String, filename: String): String {
+   return readFileToPathNative(fulaClient, cid, privateRef, path, filename)
 }
 
 fun readFile(fulaClient: Client, cid: String, privateRef: String, path: String): ByteArray? {

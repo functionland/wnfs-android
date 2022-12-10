@@ -191,7 +191,7 @@ pub mod android {
         jni_path_segments: JString,
         jni_filename: JString,
     ) -> jstring {
-        trace!("**********************readFileToPathNative started**************");
+        trace!("wnfs11 **********************readFileToPathNative started**************");
         let store = JNIStore::new(env, jni_fula_client);
         let block_store = FFIFriendlyBlockStore::new(Box::new(store));
         let helper = &mut PrivateDirectoryHelper::new(block_store);
@@ -208,13 +208,13 @@ pub mod android {
             .get_string(jni_filename)
             .expect("Failed to parse input path segments")
             .into();
-        trace!("**********************readFileToPathNative finished**************");
+        trace!("wnfs11 **********************readFileToPathNative filename created**************");
         let result: String = helper.synced_read_file_to_path(forest.to_owned(), root_dir, &path_segments, &filename);
-        let a: JString = env
-            .new_string(result)
+        trace!("wnfs11 **********************readFileToPathNative finished**************");
+        env
+            .new_string(filename)
             .expect("Failed to serialize result")
-            .into();
-        a
+            .into_inner()
     }
 
     #[no_mangle]
@@ -288,7 +288,7 @@ pub mod android {
         jni_cid: JString,
         jni_private_ref: JString,
         jni_path_segments: JString,
-    ) -> jstring {
+    ) -> jobject {
         trace!("**********************mkDirNative started**************");
         let store = JNIStore::new(env, jni_fula_client);
         let block_store = FFIFriendlyBlockStore::new(Box::new(store));
@@ -315,7 +315,7 @@ pub mod android {
         jni_cid: JString,
         jni_private_ref: JString,
         jni_path_segments: JString,
-    ) -> jstring {
+    ) -> jobject {
         trace!("**********************rmNative started**************");
         let store = JNIStore::new(env, jni_fula_client);
         let block_store = FFIFriendlyBlockStore::new(Box::new(store));

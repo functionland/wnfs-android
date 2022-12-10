@@ -4,13 +4,18 @@
 use chrono::Utc;
 use libipld::Cid;
 use rand::{thread_rng, rngs::ThreadRng};
-use std::{rc::Rc, fs::File, io::Read};
+use std::{
+    rc::Rc, 
+    fs::{File, OpenOptions}, 
+    io::{Read, Write}
+};
 use wnfs::{
     dagcbor,
     private::{PrivateForest, PrivateRef},
     BlockStore, Namefilter, PrivateDirectory, PrivateOpResult, Metadata,
 };
 use anyhow::Result;
+use log::{trace, Level};
 
 
 use crate::blockstore::FFIFriendlyBlockStore;
@@ -102,6 +107,20 @@ impl<'a> PrivateDirectoryHelper<'a> {
         self.write_file(forest, root_dir, path_segments, content).await
     }
 
+    fn write_byte_vec_to_file(&mut self, filename: &String, file_content: Vec<u8>) {
+        trace!("wnfs11 **********************write_byte_vec_to_file started**************filename={:?}", filename);
+        trace!("wnfs11 **********************write_byte_vec_to_file started**************file_content={:?}", file_content);
+        let mut file = File::create(filename).unwrap_or_else(|_err: std::io::Error| {
+            trace!("**********************put_block first unwrap error**************");
+            panic!("HERE1: {:?}", _err)
+        });
+        trace!("wnfs11 **********************write_byte_vec_to_file write created**************");
+        file
+        .write_all(&file_content)
+        .expect("Unable to write data");
+        
+    }
+
     pub async fn write_file(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String], content: Vec<u8>) -> (Cid, PrivateRef) {
         let PrivateOpResult { forest, root_dir, .. } = root_dir
             .write(
@@ -119,14 +138,9 @@ impl<'a> PrivateDirectoryHelper<'a> {
     }
 
     pub async fn read_file_to_path(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String], filename: &String) -> String {
-        let filecontent = self.read_file(forest, root_dir, path_segments);
-        let result = root_dir
-            .read(path_segments, true, forest, &mut self.store)
-            .await;
-        match result {
-            Ok(res) => Some(res.result),
-            Err(_) => None
-        }
+        let file_content = self.read_file(forest, root_dir, path_segments).await.unwrap();
+        self.write_byte_vec_to_file(filename, file_content);
+        filename.to_string()
     }
 
     pub async fn read_file(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> Option<Vec<u8>> {
@@ -212,6 +226,13 @@ impl<'a> PrivateDirectoryHelper<'a> {
         let runtime =
             tokio::runtime::Runtime::new().expect("Unable to create a runtime");
         return runtime.block_on(self.write_file(forest, root_dir, path_segments, content));
+    }
+
+    pub fn synced_read_file_to_path(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String], filename: &String) -> String
+    {
+        let runtime =
+            tokio::runtime::Runtime::new().expect("Unable to create a runtime");
+        return runtime.block_on(self.read_file_to_path(forest, root_dir, path_segments, filename));
     }
 
     pub fn synced_read_file(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> Option<Vec<u8>>

@@ -93,9 +93,18 @@ class WNFSTest {
         assertNotNull("cid should not be null", config.cid)
         Log.d("AppMock", "config writeFile. cid="+config.cid+" & private_ref="+config.private_ref)
 
+
         val contentfrompath = readFile(client, config.cid, config.private_ref, "root/testfrompath.txt")
         assert(contentfrompath contentEquals "Hello, World!".toByteArray())
         Log.d("AppMock", "readFileFromPath. content="+contentfrompath.toString())
+
+
+        val contentfrompathtopath: String = readFileToPath(client, config.cid, config.private_ref, "root/testfrompath.txt", pathString+"/test2.txt")
+        Log.d("AppMock", "contentfrompathtopath="+contentfrompathtopath)
+        assertNotNull("contentfrompathtopath should not be null", contentfrompathtopath)
+        val readcontent: ByteArray = File(contentfrompathtopath).readBytes()
+        assert(readcontent contentEquals "Hello, World!".toByteArray())
+        Log.d("AppMock", "readFileFromPathOfReadTo. content="+readcontent.toString())
 
         config = rm(client, config.cid, config.private_ref, "root/testfrompath.txt")
         val content2 = readFile(client, config.cid, config.private_ref, "root/testfrompath.txt")
