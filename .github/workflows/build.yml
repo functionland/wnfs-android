@@ -38,7 +38,7 @@ jobs:
 
 
     - name: Test utils
-      working-directory: wnfslib/utils/
+      working-directory: /home/runner/work/wnfs-android/wnfs-android/wnfslib/utils/
       run: cargo test
 
     - name: Build
