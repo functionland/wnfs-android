@@ -4,9 +4,9 @@ import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
-import fulamobile.Config
 import fulamobile.Fulamobile
-import land.fx.wnfslib.Bridge.*
+import land.fx.wnfslib.Fs.*
+import land.fx.wnfslib.Config
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -16,7 +16,7 @@ import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class WNFSTest {
-    class ConvertFulaClient(private val fulaClient: fulamobile.Client): land.fx.wnfslib.Bridge.Datastore{
+    class ConvertFulaClient(private val fulaClient: fulamobile.Client): land.fx.wnfslib.Datastore{
         override fun put(data: ByteArray, codec: Long): ByteArray{
             return fulaClient.put(data, codec)
         }
@@ -37,7 +37,7 @@ class WNFSTest {
         Log.d("AppMock", "tmp dir==$pathString")
         //val path = Path(pathString)
 
-        val configExt = Config()
+        val configExt = fulamobile.Config()
         configExt.storePath = pathString
         val peerIdentity = Fulamobile.generateEd25519Key()
         configExt.identity = peerIdentity

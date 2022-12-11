@@ -2,38 +2,7 @@ package land.fx.wnfslib;
 
 import androidx.annotation.NonNull;
 
-public final class Bridge {
-
-    public static final class Config {
-        private final String cid;
-
-        private final String private_ref;
-
-        public String getCid() {
-            return this.cid;
-        }
-
-        public String getPrivate_ref() {
-            return this.private_ref;
-        }
-
-        public Config(String cid, String private_ref) {
-            super();
-            this.cid = cid;
-            this.private_ref = private_ref;
-        }
-
-        @NonNull
-        public land.fx.wnfslib.Bridge.Config create(String cid, String private_ref) {
-            return new land.fx.wnfslib.Bridge.Config(cid, private_ref);
-        }
-    }
-
-    public interface Datastore {
-        byte[] put(byte[] data, long codec);
-
-        byte[] get(byte[] cid);
-    }
+public final class Fs {
 
     private static native String createPrivateForestNative(Datastore datastore);
 

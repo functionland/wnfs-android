@@ -108,12 +108,12 @@ pub mod android {
     }
 
     #[no_mangle]
-    pub extern "C" fn Java_land_fx_wnfslib_Bridge_initRustLogger(_: JNIEnv, _: JClass) {
+    pub extern "C" fn Java_land_fx_wnfslib_Fs_initRustLogger(_: JNIEnv, _: JClass) {
         android_logger::init_once(Config::default().with_min_level(Level::Trace));
     }
 
     #[no_mangle]
-    pub extern "C" fn Java_land_fx_wnfslib_Bridge_createPrivateForestNative(
+    pub extern "C" fn Java_land_fx_wnfslib_Fs_createPrivateForestNative(
         env: JNIEnv,
         _: JClass,
         jni_fula_client: JObject,
@@ -127,7 +127,7 @@ pub mod android {
     }
 
     #[no_mangle]
-    pub extern "C" fn Java_land_fx_wnfslib_Bridge_createRootDirNative(
+    pub extern "C" fn Java_land_fx_wnfslib_Fs_createRootDirNative(
         env: JNIEnv,
         _: JClass,
         jni_fula_client: JObject,
@@ -147,7 +147,7 @@ pub mod android {
     }
 
     #[no_mangle]
-    pub extern "C" fn Java_land_fx_wnfslib_Bridge_writeFileFromPathNative(
+    pub extern "C" fn Java_land_fx_wnfslib_Fs_writeFileFromPathNative(
         env: JNIEnv,
         _: JClass,
         jni_fula_client: JObject,
@@ -182,7 +182,7 @@ pub mod android {
     }
 
     #[no_mangle]
-    pub extern "C" fn Java_land_fx_wnfslib_Bridge_readFileToPathNative(
+    pub extern "C" fn Java_land_fx_wnfslib_Fs_readFileToPathNative(
         env: JNIEnv,
         _: JClass,
         jni_fula_client: JObject,
@@ -218,7 +218,7 @@ pub mod android {
     }
 
     #[no_mangle]
-    pub extern "C" fn Java_land_fx_wnfslib_Bridge_writeFileNative(
+    pub extern "C" fn Java_land_fx_wnfslib_Fs_writeFileNative(
         env: JNIEnv,
         _: JClass,
         jni_fula_client: JObject,
@@ -248,7 +248,7 @@ pub mod android {
     }
 
     #[no_mangle]
-    pub extern "C" fn Java_land_fx_wnfslib_Bridge_readFileNative(
+    pub extern "C" fn Java_land_fx_wnfslib_Fs_readFileNative(
         env: JNIEnv,
         _: JClass,
         jni_fula_client: JObject,
@@ -281,7 +281,7 @@ pub mod android {
     }
 
     #[no_mangle]
-    pub extern "C" fn Java_land_fx_wnfslib_Bridge_mkdirNative(
+    pub extern "C" fn Java_land_fx_wnfslib_Fs_mkdirNative(
         env: JNIEnv,
         _: JClass,
         jni_fula_client: JObject,
@@ -308,7 +308,7 @@ pub mod android {
     }
 
     #[no_mangle]
-    pub extern "C" fn Java_land_fx_wnfslib_Bridge_rmNative(
+    pub extern "C" fn Java_land_fx_wnfslib_Fs_rmNative(
         env: JNIEnv,
         _: JClass,
         jni_fula_client: JObject,
@@ -335,7 +335,7 @@ pub mod android {
     }
 
     #[no_mangle]
-    pub extern "C" fn Java_land_fx_wnfslib_Bridge_lsNative(
+    pub extern "C" fn Java_land_fx_wnfslib_Fs_lsNative(
         env: JNIEnv,
         _: JClass,
         jni_fula_client: JObject,
@@ -408,7 +408,7 @@ pub mod android {
     pub fn serialize_cid(env: JNIEnv, cid: Cid) -> JString {
         trace!("**********************serialize_cid started**************");
         trace!(
-            "**********************serialize_cid cid={}",
+            "**********************serialize_cid cid={:?}",
             cid.to_string()
         );
         let a: JString = env
