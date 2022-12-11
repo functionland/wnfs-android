@@ -6,7 +6,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
 import fulamobile.Config
 import fulamobile.Fulamobile
-import land.fx.wnfslib.*
+import land.fx.wnfslib.Bridge.*
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -16,7 +16,7 @@ import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class WNFSTest {
-    class ConvertFulaClient(private val fulaClient: fulamobile.Client): land.fx.wnfslib.Client{
+    class ConvertFulaClient(private val fulaClient: fulamobile.Client): land.fx.wnfslib.Bridge.Datastore{
         override fun put(data: ByteArray, codec: Long): ByteArray{
             return fulaClient.put(data, codec)
         }
@@ -74,7 +74,7 @@ class WNFSTest {
         assertNotNull("cid should not be null", config.cid)
         assertNotNull("private_ref should not be null", config.private_ref)
 
-        var testContent = "Hello, World!".toByteArray()
+        val testContent = "Hello, World!".toByteArray()
 
         val file = File(pathString, "test.txt")
         // create a new file
