@@ -39,10 +39,10 @@ android {
 cargo {
     module  = "../wnfslib"
     libname = "wnfslib"
-    targets = ["arm64", "x86", "x86_64", "arm"]
+    targets = ["arm64", "arm"]
     prebuiltToolchains = true
 //    Set to "debug" to enable logging. Or "release" to make a production build.
-    profile = "debug"
+    profile = "release"
 }
 
 dependencies {
@@ -62,7 +62,7 @@ publishing {
     publications {
         release(MavenPublication) {
             groupId = "land.fx"
-            artifactId = "wnfs"
+            artifactId = "wnfslib"
 
             afterEvaluate {
                 from components.release
