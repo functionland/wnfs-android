@@ -10,12 +10,13 @@ use std::{
     io::{Read, Write}
 };
 use wnfs::{
-    dagcbor,
-    private::{PrivateForest, PrivateRef},
+    dagcbor, Hasher, utils,
+    private::{PrivateForest, PrivateRef, PrivateNode, Key},
     BlockStore, Namefilter, PrivateDirectory, PrivateOpResult, Metadata,
 };
 use anyhow::Result;
 use log::{trace, Level};
+use sha3::Sha3_256;
 
 
 use crate::blockstore::FFIFriendlyBlockStore;
@@ -42,12 +43,8 @@ impl<'a> PrivateDirectoryHelper<'a> {
     pub async fn create_private_forest(&mut self) -> Result<Cid> {
         // Create the private forest (also HAMT), a map-like structure where files and directories are stored.
         let forest = Rc::new(PrivateForest::new());
-        
-        // Serialize the private forest to DAG CBOR.
-        let cbor_bytes = dagcbor::async_encode(&forest, &mut self.store).await.unwrap();
 
-        // Persist encoded private forest to the block store.
-        self.store.put_serializable(&cbor_bytes).await
+        self.update_forest(forest).await
     }
 
     pub async fn load_forest(&mut self, forest_cid: Cid) -> Result<Rc<PrivateForest>> {
@@ -61,9 +58,9 @@ impl<'a> PrivateDirectoryHelper<'a> {
         Ok(Rc::new(dagcbor::decode::<PrivateForest>(cbor_bytes.as_ref()).unwrap()))
     }
 
-    pub async fn update_forest(&mut self, hamt: Rc<PrivateForest>) -> Result<Cid> {
+    pub async fn update_forest(&mut self, forest: Rc<PrivateForest>) -> Result<Cid> {
         // Serialize the private forest to DAG CBOR.
-        let cbor_bytes = dagcbor::async_encode(&hamt, &mut self.store).await.unwrap();
+        let cbor_bytes = dagcbor::async_encode(&forest, &mut self.store).await.unwrap();
 
         // Persist encoded private forest to the block store.
         self.store.put_serializable(&cbor_bytes).await
@@ -77,20 +74,57 @@ impl<'a> PrivateDirectoryHelper<'a> {
         .unwrap().unwrap().as_dir()
     }
 
-    pub async fn init(&mut self, forest: Rc<PrivateForest>) -> (Cid, PrivateRef) {
+    pub async fn init(&mut self, forest: Rc<PrivateForest>, wnfs_key: Vec<u8>) -> (Cid, PrivateRef) {
+        let ratchet_seed: [u8; 32];
+        if wnfs_key.is_empty() {
+            let wnfs_random_key = Key::new(utils::get_random_bytes::<32>(&mut self.rng));
+            ratchet_seed = Sha3_256::hash(&wnfs_random_key.as_bytes());
+        }else {
+            ratchet_seed = Sha3_256::hash(&wnfs_key);
+        }
+        
+        let inumber: [u8; 32] = utils::get_random_bytes::<32>(&mut self.rng); // Needs to be random
+
+
+        //START TO RETRIEVE CURRENT FOREST
+        let private_ref = PrivateRef::with_seed(Default::default(), ratchet_seed, inumber);
+        let dir = forest
+            .get(
+                &private_ref, 
+                PrivateForest::resolve_lowest, 
+                &mut self.store
+            )
+            .await
+            .unwrap()
+            .unwrap()
+            .as_dir()
+            .unwrap();
+        //END OF LOAD CURRENT FOREST
+        
+        /*
         // Create a new directory.
-        let dir = Rc::new(PrivateDirectory::new(
+        let dir = Rc::new(PrivateDirectory::with_seed(
             Namefilter::default(),
             Utc::now(),
-            &mut self.rng,
+            ratchet_seed,
+            inumber
         ));
+        */
+        //TODO: CHECK IF root exists in ls thenskip mkdir
 
         let PrivateOpResult { root_dir, forest, .. } = dir
-            .mkdir(&["root".into()], true, Utc::now(), forest, &mut self.store,&mut self.rng)
+            .mkdir(
+                &["root".into()], 
+                true, 
+                Utc::now(), 
+                forest, 
+                &mut self.store,
+                &mut self.rng
+            )
             .await
             .unwrap();
 
-        (self.update_forest(forest).await.unwrap(), root_dir.header.get_private_ref())
+        (self.update_forest(forest).await.unwrap(), private_ref)
     }
 
     fn get_file_as_byte_vec(&mut self, filename: &String) -> Vec<u8> {
