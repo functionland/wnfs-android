@@ -12,11 +12,11 @@ use serde::{de::Error as DeError, ser::Error as SerError, Deserialize, Serialize
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PrivateRef {
     /// Sha3-256 hash of saturated namefilter.
-    pub(crate) saturated_name_hash: HashOutput,
+    pub saturated_name_hash: HashOutput,
     /// Sha3-256 hash of the ratchet key.
-    pub(crate) content_key: ContentKey,
+    pub content_key: ContentKey,
     /// Skip-ratchet-derived key.
-    pub(crate) revision_key: RevisionKey,
+    pub revision_key: RevisionKey,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

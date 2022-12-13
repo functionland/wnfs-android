@@ -6,7 +6,9 @@ public final class Fs {
 
     private static native String createPrivateForestNative(Datastore datastore);
 
-    private static native Config createRootDirNative(Datastore datastore, String cid);
+    private static native String getPrivateRefNative(Datastore datastore, byte[] wnfsKey);
+
+    private static native Config createRootDirNative(Datastore datastore, String cid, byte[] wnfsKey);
 
     private static native Config writeFileFromPathNative(Datastore datastore, String cid, String privateRef, String path, String filename);
 
@@ -26,8 +28,12 @@ public final class Fs {
         return createPrivateForestNative(datastore);
     }
 
-    public static Config createRootDir(Datastore datastore, String cid) {
-        return createRootDirNative(datastore, cid);
+    public static String getPrivateRef(Datastore datastore, byte[] wnfsKey) {
+        return getPrivateRefNative(datastore, wnfsKey);
+    }
+
+    public static Config createRootDir(Datastore datastore, String cid, byte[] wnfsKey) {
+        return createRootDirNative(datastore, cid, wnfsKey);
     }
 
     public static Config writeFileFromPath(Datastore datastore, String cid, String privateRef, String path, String filename) {

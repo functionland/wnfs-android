@@ -126,5 +126,19 @@ class WNFSTest {
         assert(content contentEquals "Hello, World!".toByteArray())
         Log.d("AppMock", "readFile. content="+content.toString())
 
+        Log.d("AppMock", "All tests before reload passed")
+
+        Log.d("AppMock", "wnfs12 Testing reload with cid="+config.cid+" & wnfsKey="+wnfsKey.toString())
+        //Testing reload Directory
+        var private_ref_reload: String = getPrivateRef(client, wnfsKey)
+        Log.d("AppMock", "wnfs12 original PrivateRef. private_ref="+config.private_ref)
+        Log.d("AppMock", "wnfs12 getPrivateRef. private_ref="+private_ref_reload)
+        assertNotNull("private_ref should not be null", private_ref_reload)
+        assert(private_ref_reload.toByteArray() contentEquals config.private_ref.toByteArray())
+
+        val content_reloaded = readFile(client, config.cid, private_ref_reload, "root/test.txt")
+        assert(content_reloaded contentEquals "Hello, World!".toByteArray())
+        Log.d("AppMock", "readFile. content_reloaded="+content_reloaded.toString())
+
     }
 }

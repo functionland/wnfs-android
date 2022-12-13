@@ -127,11 +127,29 @@ pub mod android {
     }
 
     #[no_mangle]
+    pub extern "C" fn Java_land_fx_wnfslib_Fs_getPrivateRefNative(
+        env: JNIEnv,
+        _: JClass,
+        jni_fula_client: JObject,
+        jni_wnfs_key: jbyteArray,
+    ) -> jstring {
+        trace!("**********************getPrivateRefNative started**************");
+        let store = JNIStore::new(env, jni_fula_client);
+        let block_store = FFIFriendlyBlockStore::new(Box::new(store));
+        let helper = &mut PrivateDirectoryHelper::new(block_store);
+        let wnfs_key: Vec<u8> = jbyte_array_to_vec(env, jni_wnfs_key);
+        let private_ref = helper.synced_get_private_ref(wnfs_key);
+        trace!("**********************getPrivateRefNative finished**************");
+        serialize_private_ref(env, private_ref).into_inner()
+    }
+
+    #[no_mangle]
     pub extern "C" fn Java_land_fx_wnfslib_Fs_createRootDirNative(
         env: JNIEnv,
         _: JClass,
         jni_fula_client: JObject,
         jni_cid: JString,
+        jni_wnfs_key: jbyteArray,
     ) -> jobject {
         trace!("**********************createRootDirNative started**************");
         let store = JNIStore::new(env, jni_fula_client);
@@ -140,7 +158,8 @@ pub mod android {
         let forest_cid = deserialize_cid(env, jni_cid);
         trace!("cid: {}", forest_cid);
         let forest = helper.synced_load_forest(forest_cid).unwrap();
-        let (cid, private_ref) = helper.synced_init(forest);
+        let wnfs_key: Vec<u8> = jbyte_array_to_vec(env, jni_wnfs_key);
+        let (cid, private_ref) = helper.synced_init(forest, wnfs_key);
         trace!("pref: {:?}", private_ref);
         trace!("**********************createRootDirNative finished**************");
         serialize_config(env, cid, private_ref)
