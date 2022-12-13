@@ -140,11 +140,11 @@ class WNFSTest {
         Log.d("AppMock", "wnfs12 original PrivateRef. private_ref="+config.private_ref)
         Log.d("AppMock", "wnfs12 getPrivateRef. private_ref="+private_ref_reload)
         assertNotNull("private_ref should not be null", private_ref_reload)
-        assert(private_ref_reload.toByteArray() contentEquals config.private_ref.toByteArray())
-
-        val content_reloaded = readFile(client, config.cid, private_ref_reload, "root/test.txt")
-        assert(content_reloaded contentEquals "Hello, World!".toByteArray())
-        Log.d("AppMock", "readFile. content_reloaded="+content_reloaded.toString())
+/* 
+        val fileNames_reloaded = ls(client, config.cid, private_ref_reload, "root")
+        Log.d("AppMock", "ls. fileNames_reloaded="+fileNames_reloaded)
+        assertEquals(fileNames_reloaded, "test.txt\ntest1")*/
+        
 
     }
 }

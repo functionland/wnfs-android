@@ -78,7 +78,9 @@ impl<'a> PrivateDirectoryHelper<'a> {
         forest
         .get(&private_ref, PrivateForest::resolve_lowest, &mut self.store)
         .await
-        .unwrap().unwrap().as_dir()
+        .unwrap()
+        .unwrap()
+        .as_dir()
     }
 
     pub async fn get_private_ref(&mut self, wnfs_key: Vec<u8>) -> PrivateRef {
@@ -112,34 +114,35 @@ impl<'a> PrivateDirectoryHelper<'a> {
                 ratchet_seed,
                 inumber
             ));*/
-        let dir = PrivateNode::from(PrivateDirectory::with_seed(
-            Namefilter::default(),
-            Utc::now(),
-            ratchet_seed,
-            inumber,
+        let root_dir = Rc::new(PrivateDirectory::with_seed( 
+            Namefilter::default(), 
+            Utc::now(), 
+            ratchet_seed, 
+            inumber, 
         ));
-        let header = dir.get_header();
 
-        trace!("\r\n wnfs13 header revision_key = {:?}", header.get_private_ref().revision_key.0.as_bytes());
-        trace!("\r\n wnfs13 header saturated_name_hash = {:?}", header.get_private_ref().saturated_name_hash);
-        trace!("\r\n wnfs13 header content_key = {:?}", header.get_private_ref().content_key.0.as_bytes());
-
-        let forest = forest
-            .put(
-                header.get_saturated_name(),
-                &header.get_private_ref(),
-                &dir,
-                &mut self.store,
-                &mut self.rng,
-            )
+        let private_ref = root_dir.header.get_private_ref(); 
+        let name = root_dir.header.get_saturated_name();
+        
+        let forest = forest 
+            .put( 
+                name, 
+                &private_ref, 
+                &PrivateNode::Dir(Rc::clone(&root_dir)), 
+                &mut self.store, 
+                &mut self.rng, 
+            ) 
             .await
             .unwrap();
+        
+        let init_private_ref = root_dir.header.get_private_ref();
 
-            trace!("\r\n wnfs13 init1 revision_key = {:?}", dir.as_dir().unwrap().header.get_private_ref().revision_key.0.as_bytes());
-            trace!("\r\n wnfs13 init1 saturated_name_hash = {:?}", dir.as_dir().unwrap().header.get_private_ref().saturated_name_hash);
-            trace!("\r\n wnfs13 init1 content_key = {:?}", dir.as_dir().unwrap().header.get_private_ref().content_key.0.as_bytes());
-
-        let PrivateOpResult { root_dir, forest, .. } = dir
+        trace!("\r\n wnfs13 header revision_key = {:?}", init_private_ref.revision_key.0.as_bytes());
+        trace!("\r\n wnfs13 header saturated_name_hash = {:?}", init_private_ref.saturated_name_hash);
+        trace!("\r\n wnfs13 header content_key = {:?}", init_private_ref.content_key.0.as_bytes());
+        (self.update_forest(forest).await.unwrap(), init_private_ref)
+        
+        /*let PrivateOpResult { root_dir, forest, .. } = dir
             .as_dir()
             .unwrap()
             .mkdir(&["root".into()], true, Utc::now(), forest, &mut self.store,&mut self.rng)
@@ -151,7 +154,7 @@ impl<'a> PrivateDirectoryHelper<'a> {
             trace!("\r\n wnfs13 init2 saturated_name_hash = {:?}", init_private_ref.saturated_name_hash);
             trace!("\r\n wnfs13 init2 content_key = {:?}", init_private_ref.content_key.0.as_bytes());
         
-        (self.update_forest(forest).await.unwrap(), init_private_ref)
+        (self.update_forest(forest).await.unwrap(), init_private_ref)*/
     }
 
     fn get_file_as_byte_vec(&mut self, filename: &String) -> Vec<u8> {
@@ -235,6 +238,7 @@ impl<'a> PrivateDirectoryHelper<'a> {
     }
 
     pub async fn ls_files(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> Vec<(String, Metadata)> {
+
         let PrivateOpResult { result, .. } = root_dir
             .ls(path_segments, true, forest, &mut self.store)
             .await
