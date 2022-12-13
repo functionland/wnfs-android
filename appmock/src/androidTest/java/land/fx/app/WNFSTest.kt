@@ -68,8 +68,11 @@ class WNFSTest {
         println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
         println(privateForest)
 
+        val keyPhrase = "test"
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        val hash: ByteArray = digest.digest(text.getBytes(StandardCharsets.UTF_8));
 
-        var config = createRootDir(client, privateForest)
+        var config = createRootDir(client, privateForest, [], false)
         Log.d("AppMock", "config crecreateRootDirated. cid="+config.cid+" & private_ref="+config.private_ref)
         assertNotNull("cid should not be null", config.cid)
         assertNotNull("private_ref should not be null", config.private_ref)

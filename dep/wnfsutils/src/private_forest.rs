@@ -74,16 +74,17 @@ impl<'a> PrivateDirectoryHelper<'a> {
         .unwrap().unwrap().as_dir()
     }
 
-    pub async fn init(&mut self, forest: Rc<PrivateForest>, wnfs_key: Vec<u8>) -> (Cid, PrivateRef) {
+    pub async fn init(&mut self, forest: Rc<PrivateForest>, wnfs_key: Vec<u8>, reload: bool) -> (Cid, PrivateRef) {
         let ratchet_seed: [u8; 32];
+        let inumber: [u8; 32];
         if wnfs_key.is_empty() {
             let wnfs_random_key = Key::new(utils::get_random_bytes::<32>(&mut self.rng));
             ratchet_seed = Sha3_256::hash(&wnfs_random_key.as_bytes());
+            inumber = utils::get_random_bytes::<32>(&mut self.rng); // Needs to be random
         }else {
             ratchet_seed = Sha3_256::hash(&wnfs_key);
+            inumber = Sha3_256::hash(&ratchet_seed);
         }
-        
-        let inumber: [u8; 32] = utils::get_random_bytes::<32>(&mut self.rng); // Needs to be random
 
 
         //START TO RETRIEVE CURRENT FOREST
@@ -111,6 +112,11 @@ impl<'a> PrivateDirectoryHelper<'a> {
         ));
         */
         //TODO: CHECK IF root exists in ls thenskip mkdir
+        if reload {
+
+            (self.update_forest(forest).await.unwrap(), private_ref)
+
+        } else {
 
         let PrivateOpResult { root_dir, forest, .. } = dir
             .mkdir(
@@ -124,7 +130,9 @@ impl<'a> PrivateDirectoryHelper<'a> {
             .await
             .unwrap();
 
-        (self.update_forest(forest).await.unwrap(), private_ref)
+            (self.update_forest(forest).await.unwrap(), private_ref)
+        }
+        
     }
 
     fn get_file_as_byte_vec(&mut self, filename: &String) -> Vec<u8> {
@@ -241,11 +249,11 @@ impl<'a> PrivateDirectoryHelper<'a> {
         return runtime.block_on(self.get_root_dir(forest, private_ref));
     }
 
-    pub fn synced_init(&mut self, forest: Rc<PrivateForest>) -> (Cid, PrivateRef)
+    pub fn synced_init(&mut self, forest: Rc<PrivateForest>, wnfs_key: Vec<u8>, reload: bool) -> (Cid, PrivateRef)
     {
         let runtime =
             tokio::runtime::Runtime::new().expect("Unable to create a runtime");
-        return runtime.block_on(self.init(forest));
+        return runtime.block_on(self.init(forest, wnfs_key, reload));
     }
 
     pub fn synced_write_file_from_path(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String], filename: &String) -> (Cid, PrivateRef)
@@ -322,13 +330,14 @@ mod private_tests {
 
     #[async_std::test]
     async fn iboverall() {
+        let empty_key: Vec<u8> = vec![0; 32];
         let store = KVBlockStore::new(String::from("./tmp/test2"), IpldCodec::DagCbor);
         let blockstore = FFIFriendlyBlockStore::new(Box::new(store));
         let helper = &mut PrivateDirectoryHelper::new(blockstore);
         let forest_cid = helper.create_private_forest().await.unwrap();
         println!("cid: {:?}", forest_cid);
         let forest = helper.load_forest(forest_cid).await.unwrap();
-        let (forest_cid, private_ref) = helper.init(forest).await;
+        let (forest_cid, private_ref) = helper.init(forest, empty_key, false).await;
         let forest = helper.load_forest(forest_cid).await.unwrap();
         let root_dir = helper.get_root_dir(forest.to_owned(), private_ref.to_owned()).await.unwrap();
         let (new_cid, _) = helper.write_file(forest.to_owned(), root_dir.to_owned(), &["root".into(), "hello".into(), "world.txt".into()], b"hello, world!".to_vec()).await;
