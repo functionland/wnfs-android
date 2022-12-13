@@ -12,6 +12,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 
 
 @RunWith(AndroidJUnit4::class)
@@ -68,11 +70,11 @@ class WNFSTest {
         println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
         println(privateForest)
 
-        val keyPhrase = "test"
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        val hash: ByteArray = digest.digest(text.getBytes(StandardCharsets.UTF_8));
+        val keyPhrase = ("test").toByteArray(StandardCharsets.UTF_8)
+        val digest: MessageDigest = MessageDigest.getInstance("SHA-256");
+        val hash: ByteArray = digest.digest(keyPhrase);
 
-        var config = createRootDir(client, privateForest, [], false)
+        var config = createRootDir(client, privateForest, hash, false)
         Log.d("AppMock", "config crecreateRootDirated. cid="+config.cid+" & private_ref="+config.private_ref)
         assertNotNull("cid should not be null", config.cid)
         assertNotNull("private_ref should not be null", config.private_ref)
