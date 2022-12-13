@@ -88,37 +88,31 @@ impl<'a> PrivateDirectoryHelper<'a> {
 
 
         //START TO RETRIEVE CURRENT FOREST
-        let private_ref = PrivateRef::with_seed(Default::default(), ratchet_seed, inumber);
-        let dir = forest
-            .get(
-                &private_ref, 
-                PrivateForest::resolve_lowest, 
-                &mut self.store
-            )
-            .await
-            .unwrap()
-            .unwrap()
-            .as_dir()
-            .unwrap();
-        //END OF LOAD CURRENT FOREST
-        
-        /*
-        // Create a new directory.
-        let dir = Rc::new(PrivateDirectory::with_seed(
-            Namefilter::default(),
-            Utc::now(),
-            ratchet_seed,
-            inumber
-        ));
-        */
-        //TODO: CHECK IF root exists in ls thenskip mkdir
         if reload {
-
-            (self.update_forest(forest).await.unwrap(), private_ref)
-
+            let private_ref = PrivateRef::with_seed(Default::default(), ratchet_seed, inumber);
+            let dir = forest
+                .get(
+                    &private_ref, 
+                    PrivateForest::resolve_lowest, 
+                    &mut self.store
+                )
+                .await
+                .unwrap()
+                .unwrap()
+                .as_dir()
+                .unwrap();
+            //END OF LOAD CURRENT FOREST
+            return (self.update_forest(forest).await.unwrap(), private_ref);
         } else {
-
-        let PrivateOpResult { root_dir, forest, .. } = dir
+        
+            // Create a new directory.
+            let dir = Rc::new(PrivateDirectory::with_seed(
+                Namefilter::default(),
+                Utc::now(),
+                ratchet_seed,
+                inumber
+            ));
+            let PrivateOpResult { root_dir, forest, .. } = dir
             .mkdir(
                 &["root".into()], 
                 true, 
@@ -130,7 +124,8 @@ impl<'a> PrivateDirectoryHelper<'a> {
             .await
             .unwrap();
 
-            (self.update_forest(forest).await.unwrap(), private_ref)
+            return (self.update_forest(forest).await.unwrap(), root_dir.header.get_private_ref());
+        
         }
         
     }
