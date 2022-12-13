@@ -7,7 +7,7 @@ pub mod android {
 
     use jni::objects::{JClass, JObject, JString, JValue};
     use jni::signature::JavaType;
-    use jni::sys::{jbyteArray, jobject, jstring, jboolean, JNI_TRUE};
+    use jni::sys::{jbyteArray, jobject, jstring};
     use jni::JNIEnv;
     use libipld::Cid;
     use log::{trace, Level};
@@ -132,8 +132,6 @@ pub mod android {
         _: JClass,
         jni_fula_client: JObject,
         jni_cid: JString,
-        jni_wnfs_key: jbyteArray,
-        jni_reload: jboolean,
     ) -> jobject {
         trace!("**********************createRootDirNative started**************");
         let store = JNIStore::new(env, jni_fula_client);
@@ -142,9 +140,7 @@ pub mod android {
         let forest_cid = deserialize_cid(env, jni_cid);
         trace!("cid: {}", forest_cid);
         let forest = helper.synced_load_forest(forest_cid).unwrap();
-        let wnfs_key: Vec<u8> = jbyte_array_to_vec(env, jni_wnfs_key);
-        let reload: bool = jni_reload == JNI_TRUE;
-        let (cid, private_ref) = helper.synced_init(forest, wnfs_key, reload);
+        let (cid, private_ref) = helper.synced_init(forest);
         trace!("pref: {:?}", private_ref);
         trace!("**********************createRootDirNative finished**************");
         serialize_config(env, cid, private_ref)
