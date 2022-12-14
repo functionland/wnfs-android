@@ -75,9 +75,6 @@ impl<'a> PrivateDirectoryHelper<'a> {
     }
 
     pub async fn get_root_dir(&mut self, forest: Rc<PrivateForest>, private_ref: PrivateRef) -> Result<Rc<PrivateDirectory>> {
-        //trace!("\r\n wnfs13 revision_key = {:?}", private_ref.revision_key.0.as_bytes());
-        //trace!("\r\n wnfs13 saturated_name_hash = {:?}", private_ref.saturated_name_hash);
-        //trace!("\r\n wnfs13 content_key = {:?}", private_ref.content_key.0.as_bytes());
         // Fetch and decrypt root directory from the private forest using provided private ref.
         forest
         .get(&private_ref, PrivateForest::resolve_lowest, &mut self.store)
@@ -126,10 +123,6 @@ impl<'a> PrivateDirectoryHelper<'a> {
 
         let private_ref = latest_dir.header.get_private_ref();
 
-        trace!("\r\n wnfs13 get_private_ref.content_key {:?}", private_ref.content_key.0.as_bytes());
-        trace!("\r\n wnfs13 get_private_ref.saturated_name_hash {:?}", private_ref.saturated_name_hash);
-        trace!("\r\n wnfs13 get_private_ref.revision_key {:?}", private_ref.revision_key.0.as_bytes());
-
         private_ref
         
     }
@@ -176,9 +169,6 @@ impl<'a> PrivateDirectoryHelper<'a> {
         
         let init_private_ref = root_dir.header.get_private_ref();
 
-        trace!("\r\n wnfs13 header revision_key = {:?}", init_private_ref.revision_key.0.as_bytes());
-        trace!("\r\n wnfs13 header saturated_name_hash = {:?}", init_private_ref.saturated_name_hash);
-        trace!("\r\n wnfs13 header content_key = {:?}", init_private_ref.content_key.0.as_bytes());
         (self.update_forest(forest).await.unwrap(), init_private_ref)
 
         /*let PrivateOpResult { root_dir, forest, .. } = dir
@@ -188,10 +178,6 @@ impl<'a> PrivateDirectoryHelper<'a> {
             .await
             .unwrap();
         let init_private_ref = root_dir.header.get_private_ref();
-
-        trace!("\r\n wnfs13 init2 revision_key = {:?}", init_private_ref.revision_key.0.as_bytes());
-            trace!("\r\n wnfs13 init2 saturated_name_hash = {:?}", init_private_ref.saturated_name_hash);
-            trace!("\r\n wnfs13 init2 content_key = {:?}", init_private_ref.content_key.0.as_bytes());
         
         (self.update_forest(forest).await.unwrap(), init_private_ref)*/
     }
