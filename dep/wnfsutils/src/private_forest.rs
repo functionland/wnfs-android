@@ -57,9 +57,13 @@ impl<'a> PrivateDirectoryHelper<'a> {
             .get_deserializable::<Vec<u8>>(&forest_cid)
             .await
             .unwrap();
+        let loaded_forest = Rc::new(
+            dagcbor::decode::<PrivateForest>(cbor_bytes.as_ref())
+            .unwrap()
+        );
 
         // Decode private forest CBOR bytes.
-        Ok(Rc::new(dagcbor::decode::<PrivateForest>(cbor_bytes.as_ref()).unwrap()))
+        Ok(loaded_forest)
     }
 
     pub async fn update_forest(&mut self, hamt: Rc<PrivateForest>) -> Result<Cid> {
@@ -83,10 +87,45 @@ impl<'a> PrivateDirectoryHelper<'a> {
         .as_dir()
     }
 
-    pub async fn get_private_ref(&mut self, wnfs_key: Vec<u8>) -> PrivateRef {
+    pub async fn get_private_ref(&mut self, wnfs_key: Vec<u8>, forest_cid: Cid) -> PrivateRef {
         let ratchet_seed: [u8; 32] = Sha3_256::hash(&wnfs_key);
         let inumber: [u8; 32] = Sha3_256::hash(&ratchet_seed);
-        let private_ref = PrivateRef::with_seed(Namefilter::default(), ratchet_seed, inumber);
+        let reloaded_private_ref = PrivateRef::with_seed(Namefilter::default(), ratchet_seed, inumber);
+        
+
+        let forest = self.load_forest(forest_cid)
+        .await
+        .unwrap();
+        let fetched_node = forest
+        .get(
+            &reloaded_private_ref, 
+            PrivateForest::resolve_lowest, 
+            &mut self.store
+        )
+        .await
+        .unwrap();
+
+        let latest_dir = {
+            let tmp = fetched_node
+                .unwrap()
+                .as_dir()
+                .unwrap();
+            tmp.get_node(
+                &[], 
+                true, 
+                forest,  
+                &mut self.store
+            )
+                .await
+                .unwrap()
+                .result
+                .unwrap()
+                .as_dir()
+        }
+        .unwrap();
+
+        let private_ref = latest_dir.header.get_private_ref();
+
         trace!("\r\n wnfs13 get_private_ref.content_key {:?}", private_ref.content_key.0.as_bytes());
         trace!("\r\n wnfs13 get_private_ref.saturated_name_hash {:?}", private_ref.saturated_name_hash);
         trace!("\r\n wnfs13 get_private_ref.revision_key {:?}", private_ref.revision_key.0.as_bytes());
@@ -141,7 +180,7 @@ impl<'a> PrivateDirectoryHelper<'a> {
         trace!("\r\n wnfs13 header saturated_name_hash = {:?}", init_private_ref.saturated_name_hash);
         trace!("\r\n wnfs13 header content_key = {:?}", init_private_ref.content_key.0.as_bytes());
         (self.update_forest(forest).await.unwrap(), init_private_ref)
-        
+
         /*let PrivateOpResult { root_dir, forest, .. } = dir
             .as_dir()
             .unwrap()
@@ -264,11 +303,11 @@ impl<'a> PrivateDirectoryHelper<'a> {
         return runtime.block_on(self.load_forest(forest_cid));
     }
 
-    pub fn synced_get_private_ref(&mut self, wnfs_key: Vec<u8>) -> PrivateRef
+    pub fn synced_get_private_ref(&mut self, wnfs_key: Vec<u8>, forest_cid: Cid) -> PrivateRef
     {
         let runtime =
             tokio::runtime::Runtime::new().expect("Unable to create a runtime");
-        return runtime.block_on(self.get_private_ref(wnfs_key));
+        return runtime.block_on(self.get_private_ref(wnfs_key, forest_cid));
     }
 
 

@@ -132,13 +132,15 @@ pub mod android {
         _: JClass,
         jni_fula_client: JObject,
         jni_wnfs_key: jbyteArray,
+        jni_cid: JString,
     ) -> jstring {
         trace!("**********************getPrivateRefNative started**************");
         let store = JNIStore::new(env, jni_fula_client);
         let block_store = FFIFriendlyBlockStore::new(Box::new(store));
         let helper = &mut PrivateDirectoryHelper::new(block_store);
         let wnfs_key: Vec<u8> = jbyte_array_to_vec(env, jni_wnfs_key);
-        let private_ref = helper.synced_get_private_ref(wnfs_key);
+        let forest_cid = deserialize_cid(env, jni_cid);
+        let private_ref = helper.synced_get_private_ref(wnfs_key, forest_cid);
         trace!("**********************getPrivateRefNative finished**************");
         serialize_private_ref(env, private_ref).into_inner()
     }
