@@ -14,7 +14,7 @@ Webnative Filesystem(WNFS) wrapper for Android.
 - It can be used in other frameworks, suchas React Native or Flutter as welll. Checkout react-native-fula for an exmaple of how to use this library in react-native and how to transfer the DAG with libp2p: https://github.com/functionland/react-native-fula
 
 
-#Manual Build
+# Manual Build
 
 ## Prerequisites
 
