@@ -9,7 +9,7 @@ Webnative Filesystem(WNFS) wrapper for Android.
 
 - Please checkout the AppMock for all usage examples: https://github.com/functionland/wnfs-android/blob/main/appmock/src/androidTest/java/land/fx/app/WNFSTest.kt
 
-- Also checkout react-native-fula for an exmaple of how to use this library in react-native and how to transfer the DAG with libp2p.
+- Also checkout react-native-fula for an exmaple of how to use this library in react-native and how to transfer the DAG with libp2p: https://github.com/functionland/react-native-fula
 
 ## Prerequisites
 
