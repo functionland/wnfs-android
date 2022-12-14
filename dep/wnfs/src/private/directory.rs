@@ -134,6 +134,70 @@ impl PrivateDirectory {
         }
     }
 
+    pub async fn with_store<B: BlockStore, R: RngCore>(
+        parent_bare_name: Namefilter,
+        time: DateTime<Utc>,
+        forest: Rc<PrivateForest>,
+        store: &mut B,
+        rng: &mut R,
+    ) -> Result<PrivateOpResult<()>> {
+        let dir = Rc::new(Self {
+            version: Version::new(0, 2, 0),
+            header: PrivateNodeHeader::new(parent_bare_name, rng),
+            metadata: Metadata::new(time),
+            entries: BTreeMap::new(),
+        });
+
+        let forest = forest
+            .put(
+                dir.header.get_saturated_name(),
+                &dir.header.get_private_ref(),
+                &PrivateNode::Dir(Rc::clone(&dir)),
+                store,
+                rng,
+            )
+            .await?;
+
+        Ok(PrivateOpResult {
+            root_dir: dir,
+            forest,
+            result: (),
+        })
+    }
+
+    pub async fn with_seed_and_store<B: BlockStore, R: RngCore>(
+        parent_bare_name: Namefilter,
+        time: DateTime<Utc>,
+        ratchet_seed: HashOutput,
+        inumber: HashOutput,
+        forest: Rc<PrivateForest>,
+        store: &mut B,
+        rng: &mut R,
+    ) -> Result<PrivateOpResult<()>> {
+        let dir = Rc::new(Self {
+            version: Version::new(0, 2, 0),
+            header: PrivateNodeHeader::with_seed(parent_bare_name, ratchet_seed, inumber),
+            metadata: Metadata::new(time),
+            entries: BTreeMap::new(),
+        });
+
+        let forest = forest
+            .put(
+                dir.header.get_saturated_name(),
+                &dir.header.get_private_ref(),
+                &PrivateNode::Dir(Rc::clone(&dir)),
+                store,
+                rng,
+            )
+            .await?;
+
+        Ok(PrivateOpResult {
+            root_dir: dir,
+            forest,
+            result: (),
+        })
+    }
+
     /// Gets the metadata of the directory
     ///
     /// # Examples
@@ -410,11 +474,14 @@ impl PrivateDirectory {
                     NotADirectory(_, _) => bail!(FsError::NotFound),
                 }
             }
-            None => PrivateOpResult {
-                root_dir,
-                forest,
-                result: Some(PrivateNode::Dir(self)),
-            },
+            None => {
+                let result = self.lookup_node("", search_latest, &forest, store).await?;
+                PrivateOpResult {
+                    root_dir,
+                    forest,
+                    result,
+                }
+            }
         })
     }
 
@@ -685,6 +752,21 @@ impl PrivateDirectory {
         forest: &PrivateForest,
         store: &B,
     ) -> Result<Option<PrivateNode>> {
+        if path_segment.is_empty() {
+            let private_node = forest
+                .get(
+                    &self.header.get_private_ref(),
+                    PrivateForest::resolve_lowest,
+                    store,
+                )
+                .await?;
+
+            return Ok(match (search_latest, private_node) {
+                (true, Some(node)) => Some(node.search_latest(forest, store).await?),
+                (_, node) => node,
+            });
+        }
+
         Ok(match self.entries.get(path_segment) {
             Some(private_ref) => {
                 let private_node = forest
