@@ -142,9 +142,19 @@ class WNFSTest {
         assertNotNull("private_ref should not be null", private_ref_reload)
 
         val fileNames_reloaded = ls(client, config.cid, private_ref_reload, "root")
-        Log.d("AppMock", "ls. fileNames_reloaded="+fileNames_reloaded)
         assertEquals(fileNames_reloaded, "test.txt\ntest1")
         
+
+        val content_reloaded = readFile(client, config.cid, private_ref_reload, "root/test.txt")
+        Log.d("AppMock", "readFile. content="+content_reloaded.toString())
+        assert(content_reloaded contentEquals "Hello, World!".toByteArray())
+
+        val contentfrompathtopath_reloaded: String = readFileToPath(client, config.cid, private_ref_reload, "root/test.txt", pathString+"/test2.txt")
+        Log.d("AppMock", "contentfrompathtopath_reloaded="+contentfrompathtopath_reloaded)
+        assertNotNull("contentfrompathtopath_reloaded should not be null", contentfrompathtopath_reloaded)
+        val readcontent_reloaded: ByteArray = File(contentfrompathtopath_reloaded).readBytes()
+        assert(readcontent_reloaded contentEquals "Hello, World!".toByteArray())
+        Log.d("AppMock", "readFileFromPathOfReadTo. content="+readcontent_reloaded.toString())
 
     }
 }
