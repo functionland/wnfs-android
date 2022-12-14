@@ -1,3 +1,6 @@
+[![](https://jitpack.io/v/functionland/wnfs-build-aar.svg)](https://jitpack.io/#functionland/wnfs-build-aar)
+
+
 # WNFS-lib For Android
 
 A wnfslib wrapper for Android.
