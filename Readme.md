@@ -9,7 +9,7 @@ Webnative Filesystem(WNFS) wrapper for Android.
 
 - Library is already packaged and published on Jitpack and ready to be used in Android applications (Java, Kotlin). Please checkout the AppMock for all usage examples: https://github.com/functionland/wnfs-android/blob/main/appmock/src/androidTest/java/land/fx/app/WNFSTest.kt
 
--aar files are available here that can be imported in ny framework: https://github.com/functionland/wnfs-build-aar
+- .aar files are available here that can be imported in ny framework: https://github.com/functionland/wnfs-build-aar
 
 - It can be used in other frameworks, suchas React Native or Flutter as welll. Checkout react-native-fula for an exmaple of how to use this library in react-native and how to transfer the DAG with libp2p: https://github.com/functionland/react-native-fula
 
