@@ -206,11 +206,11 @@ pub mod android {
             let (cid, private_ref) = write_file_result.ok().unwrap();
             let config = serialize_config(env, cid, private_ref);
             let msg = "".to_string();
-            return serialize_jni_result(env, msg, config);
+            return config;
         } else {
             let config = serialize_config(env, old_cid, old_private_ref);
             let msg = write_file_result.err().unwrap();
-            return serialize_jni_result(env, msg, JObject::null().into_inner());
+            return JObject::null().into_inner();
         }
         
     }
@@ -396,13 +396,6 @@ pub mod android {
         env.new_string(output.join("\n"))
             .expect("Failed to create new jstring")
             .into_inner()
-    }
-
-    pub fn serialize_jni_result(env: JNIEnv, msg: JString, result: jobject) -> jobject {
-        trace!("**********************serialize_jni_result started**************");
-            let res:(String, jobject) = (msg, result);
-            
-            res.into_inner()
     }
 
     pub fn serialize_config(env: JNIEnv, cid: Cid, private_ref: PrivateRef) -> jobject {

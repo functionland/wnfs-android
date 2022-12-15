@@ -38,15 +38,15 @@ public final class Fs {
 
     public static Config writeFileFromPath(Datastore datastore, String cid, String privateRef, String path, String filename) throws Exception{
         try {
-            var res = writeFileFromPathNative(datastore, cid, privateRef, path, filename);
-            if(res.msg == "") {
-                return res.result;
+            Config res = writeFileFromPathNative(datastore, cid, privateRef, path, filename);
+            if(res != null) {
+                return res;
             } else {
-                throw new Exception(res.msg);
+                throw new Exception("An Error Occured");
             }
         } 
         catch(Exception e) {
-            return e;
+            throw new Exception(e.getMessage());
         }
     }
 
