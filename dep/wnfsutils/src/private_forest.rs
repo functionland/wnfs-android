@@ -185,10 +185,14 @@ impl<'a> PrivateDirectoryHelper<'a> {
     fn get_file_as_byte_vec(&mut self, filename: &String) -> Result<Vec<u8>, String> {
         let f = File::open(&filename);
         if f.is_ok() {
-            let metadata = std::fs::metadata(&filename).expect("unable to read metadata");
-            let mut buffer = vec![0; metadata.len() as usize];
-            f.ok().unwrap().read(&mut buffer).expect("buffer overflow");
-            Ok(buffer)
+            let metadata = std::fs::metadata(&filename);
+            if metadata.is_ok() {
+                let mut buffer = vec![0; metadata.ok().unwrap().len() as usize];
+                f.ok().unwrap().read(&mut buffer).expect("buffer overflow");
+                Ok(buffer)
+            } else {
+                Err("unable to read metadata".to_string())
+            }
         } else {
             Err("no file found".to_string())
         }
