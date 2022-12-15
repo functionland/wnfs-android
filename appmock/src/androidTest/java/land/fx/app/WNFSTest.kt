@@ -99,6 +99,7 @@ class WNFSTest {
             val config_err = writeFileFromPath(client, config.cid, config.private_ref, "root/testfrompath.txt", "file://"+pathString+"/test.txt")
             Log.d("AppMock", "config_err writeFile. config_err="+config_err)
         } catch (e: Exception) {
+            assertNotNull("config should not be null", e)
             Log.d("AppMock", "config_err Error catched "+e.message);
         }
         
