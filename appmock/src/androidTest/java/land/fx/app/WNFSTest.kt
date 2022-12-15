@@ -95,9 +95,15 @@ class WNFSTest {
         file.writeBytes(testContent)
 
 
+        val config_err = writeFileFromPath(client, config.cid, config.private_ref, "root/testfrompath.txt", "file://"+pathString+"/test.txt")
+        Log.d("AppMock", "config_err writeFile. cid="+config_err.cid+" & private_ref="+config_err.private_ref)
+        assertEquals("no file found", exception.getMessage());
+
         config = writeFileFromPath(client, config.cid, config.private_ref, "root/testfrompath.txt", pathString+"/test.txt")
-        assertNotNull("cid should not be null", config.cid)
         Log.d("AppMock", "config writeFile. cid="+config.cid+" & private_ref="+config.private_ref)
+        assertNotNull("config should not be null", config)
+        assertNotNull("cid should not be null", config.cid)
+        
 
 
         val contentfrompath = readFile(client, config.cid, config.private_ref, "root/testfrompath.txt")

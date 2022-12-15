@@ -10,6 +10,7 @@ pub mod android {
     use jni::sys::{jbyteArray, jobject, jstring};
     use jni::JNIEnv;
     use libipld::Cid;
+    use libipld::cbor::cbor::NULL;
     use log::{trace, Level};
     use wnfs::private::PrivateRef;
     use wnfs::Metadata;
@@ -184,6 +185,8 @@ pub mod android {
 
         let cid = deserialize_cid(env, jni_cid);
         let private_ref = deserialize_private_ref(env, jni_private_ref);
+        let old_private_ref = private_ref.to_owned();
+        let old_cid = cid.to_owned();
 
         let forest = helper.synced_load_forest(cid).unwrap();
         let root_dir = helper
@@ -196,10 +199,20 @@ pub mod android {
             .expect("Failed to parse input path segments")
             .into();
 
-        let (cid, private_ref) =
+        let write_file_result = 
             helper.synced_write_file_from_path(forest.to_owned(), root_dir, &path_segments, &filename);
-        trace!("**********************writeFileFromPathNative finished**************");
-        serialize_config(env, cid, private_ref)
+            trace!("**********************writeFileFromPathNative finished**************");
+        if write_file_result.is_ok() {
+            let (cid, private_ref) = write_file_result.ok().unwrap();
+            let config = serialize_config(env, cid, private_ref);
+            let msg = "".to_string();
+            return serialize_jni_result(env, msg, config);
+        } else {
+            let config = serialize_config(env, old_cid, old_private_ref);
+            let msg = write_file_result.err().unwrap();
+            return serialize_jni_result(env, msg, JObject::null().into_inner());
+        }
+        
     }
 
     #[no_mangle]
@@ -383,6 +396,13 @@ pub mod android {
         env.new_string(output.join("\n"))
             .expect("Failed to create new jstring")
             .into_inner()
+    }
+
+    pub fn serialize_jni_result(env: JNIEnv, msg: JString, result: jobject) -> jobject {
+        trace!("**********************serialize_jni_result started**************");
+            let res:(String, jobject) = (msg, result);
+            
+            res.into_inner()
     }
 
     pub fn serialize_config(env: JNIEnv, cid: Cid, private_ref: PrivateRef) -> jobject {

@@ -182,18 +182,29 @@ impl<'a> PrivateDirectoryHelper<'a> {
         (self.update_forest(forest).await.unwrap(), init_private_ref)*/
     }
 
-    fn get_file_as_byte_vec(&mut self, filename: &String) -> Vec<u8> {
-        let mut f = File::open(&filename).expect("no file found");
-        let metadata = std::fs::metadata(&filename).expect("unable to read metadata");
-        let mut buffer = vec![0; metadata.len() as usize];
-        f.read(&mut buffer).expect("buffer overflow");
-    
-        buffer
+    fn get_file_as_byte_vec(&mut self, filename: &String) -> Result<Vec<u8>, String> {
+        let f = File::open(&filename);
+        if f.is_ok() {
+            let metadata = std::fs::metadata(&filename).expect("unable to read metadata");
+            let mut buffer = vec![0; metadata.len() as usize];
+            f.ok().unwrap().read(&mut buffer).expect("buffer overflow");
+            Ok(buffer)
+        } else {
+            Err("no file found".to_string())
+        }
+        
     }
 
-    pub async fn write_file_from_path(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String], filename: &String) -> (Cid, PrivateRef) {
-        let content: Vec<u8> = self.get_file_as_byte_vec(filename);
-        self.write_file(forest, root_dir, path_segments, content).await
+    pub async fn write_file_from_path(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String], filename: &String) -> Result<(Cid, PrivateRef), String> {
+        let content: Vec<u8>;
+        let try_content = self.get_file_as_byte_vec(filename);
+        if try_content.is_ok() {
+            content = try_content.ok().unwrap();
+            Ok(self.write_file(forest, root_dir, path_segments, content).await)
+        } else {
+            Err(try_content.err().unwrap())
+        }
+        
     }
 
     fn write_byte_vec_to_file(&mut self, filename: &String, file_content: Vec<u8>) {
@@ -311,7 +322,7 @@ impl<'a> PrivateDirectoryHelper<'a> {
         return runtime.block_on(self.init(forest, wnfs_key));
     }
 
-    pub fn synced_write_file_from_path(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String], filename: &String) -> (Cid, PrivateRef)
+    pub fn synced_write_file_from_path(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String], filename: &String) -> Result<(Cid, PrivateRef), String>
     {
         let runtime =
             tokio::runtime::Runtime::new().expect("Unable to create a runtime");

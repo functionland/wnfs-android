@@ -36,8 +36,18 @@ public final class Fs {
         return createRootDirNative(datastore, cid, wnfsKey);
     }
 
-    public static Config writeFileFromPath(Datastore datastore, String cid, String privateRef, String path, String filename) {
-        return writeFileFromPathNative(datastore, cid, privateRef, path, filename);
+    public static Config writeFileFromPath(Datastore datastore, String cid, String privateRef, String path, String filename) throws Exception{
+        try {
+            var res = writeFileFromPathNative(datastore, cid, privateRef, path, filename);
+            if(res.msg == "") {
+                return res.result;
+            } else {
+                throw new Exception(res.msg);
+            }
+        } 
+        catch(Exception e) {
+            return e;
+        }
     }
 
     public static Config writeFile(Datastore datastore, String cid, String privateRef, String path, byte[] content) {
