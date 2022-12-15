@@ -42,7 +42,7 @@ public final class Fs {
             if(res != null) {
                 return res;
             } else {
-                throw new Exception("An Error Occured");
+                throw new Exception("An Error Occured in Fs.writeFileFromPath");
             }
         } 
         catch(Exception e) {
