@@ -204,12 +204,11 @@ pub mod android {
             trace!("**********************writeFileFromPathNative finished**************");
         if write_file_result.is_ok() {
             let (cid, private_ref) = write_file_result.ok().unwrap();
-            let config = serialize_config(env, cid, private_ref);
-            let msg = "".to_string();
-            return config;
+            return serialize_config(env, cid, private_ref);
         } else {
             let config = serialize_config(env, old_cid, old_private_ref);
             let msg = write_file_result.err().unwrap();
+            trace!("Error in Java_land_fx_wnfslib_Fs_writeFileFromPathNative: {:?}", msg);
             return JObject::null().into_inner();
         }
         
