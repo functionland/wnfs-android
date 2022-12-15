@@ -74,3 +74,4 @@ Please note the following might not be done in order:
 - [ ] add error catching
 - [ ] add metadata to ls and make it array
 - [ ] Improve ls, read, and write functions to use a stream. ( :100: v1.0.0 Release here )
+- [ ] remove dependancy to custom version of wnfs
