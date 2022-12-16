@@ -24,19 +24,39 @@ public final class Fs {
 
     private static native byte[] readFileNative(Datastore datastore, String cid, String privateRef, String path);
 
-    public static String createPrivateForest(Datastore datastore) {
-        return createPrivateForestNative(datastore);
+    public static String createPrivateForest(Datastore datastore) throws Exception {
+        try {
+            String res = createPrivateForestNative(datastore);
+            if(res != null && !res.isEmpty()) {
+                return res;
+            } else {
+                throw new Exception("An Error Occured in Fs.createPrivateForest");
+            }
+        }
+        catch(Exception e) {
+            throw new Exception(e.getMessage());
+        }
     }
 
-    public static String getPrivateRef(Datastore datastore, byte[] wnfsKey, String cid) {
-        return getPrivateRefNative(datastore, wnfsKey, cid);
+    public static String getPrivateRef(Datastore datastore, byte[] wnfsKey, String cid) throws Exception {
+        try {
+            String res = getPrivateRefNative(datastore, wnfsKey, cid);
+            if(res != null && !res.isEmpty()) {
+                return res;
+            } else {
+                throw new Exception("An Error Occured in Fs.getPrivateRef");
+            }
+        }
+        catch(Exception e) {
+            throw new Exception(e.getMessage());
+        }
     }
 
     public static Config createRootDir(Datastore datastore, String cid, byte[] wnfsKey) {
         return createRootDirNative(datastore, cid, wnfsKey);
     }
 
-    public static Config writeFileFromPath(Datastore datastore, String cid, String privateRef, String path, String filename) throws Exception{
+    public static Config writeFileFromPath(Datastore datastore, String cid, String privateRef, String path, String filename) throws Exception {
         try {
             Config res = writeFileFromPathNative(datastore, cid, privateRef, path, filename);
             if(res != null) {
@@ -50,8 +70,18 @@ public final class Fs {
         }
     }
 
-    public static Config writeFile(Datastore datastore, String cid, String privateRef, String path, byte[] content) {
-        return writeFileNative(datastore, cid, privateRef, path, content);
+    public static Config writeFile(Datastore datastore, String cid, String privateRef, String path, byte[] content) throws Exception {
+        try {
+            Config res = writeFileNative(datastore, cid, privateRef, path, content);
+            if(res != null) {
+                return res;
+            } else {
+                throw new Exception("An Error Occured in Fs.writeFile");
+            }
+        } 
+        catch(Exception e) {
+            throw new Exception(e.getMessage());
+        }
     }
 
     public static String ls(Datastore datastore, String cid, String privateRef, String path) {
