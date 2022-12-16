@@ -464,17 +464,31 @@ pub mod android {
         let cid = deserialize_cid(env, jni_cid);
         let private_ref = deserialize_private_ref(env, jni_private_ref);
 
-        let forest = helper.synced_load_forest(cid).unwrap();
-        let root_dir = helper
-            .synced_get_root_dir(forest.to_owned(), private_ref)
-            .unwrap();
-        let path_segments = prepare_path_segments(env, jni_path_segments);
-        let output =
-            prepare_ls_output(helper.synced_ls_files(forest.to_owned(), root_dir, &path_segments));
-        trace!("**********************lsNative finished**************");
-        env.new_string(output.join("\n"))
-            .expect("Failed to create new jstring")
-            .into_inner()
+        let forest_res = helper.synced_load_forest(cid);
+        if forest_res.is_ok() {
+            let forest = forest_res.ok().unwrap();
+            let root_dir_res = helper
+                .synced_get_root_dir(forest.to_owned(), private_ref);
+            if root_dir_res.is_ok() {
+                let root_dir = root_dir_res.ok().unwrap();
+                let path_segments = prepare_path_segments(env, jni_path_segments);
+                let ls_res = helper.synced_ls_files(forest.to_owned(), root_dir, &path_segments);
+                if ls_res.is_ok() {
+                    let output =
+                        prepare_ls_output(ls_res.ok().unwrap());
+                    trace!("**********************lsNative finished**************");
+                    env.new_string(output.join("\n"))
+                        .expect("Failed to create new jstring")
+                        .into_inner()
+                } else {
+                    
+                }
+            } else {
+
+            }
+        } else {
+
+        }
     }
 
     pub fn serialize_config(env: JNIEnv, cid: Cid, private_ref: PrivateRef) -> jobject {

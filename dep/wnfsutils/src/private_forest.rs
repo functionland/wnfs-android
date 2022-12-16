@@ -374,13 +374,18 @@ impl<'a> PrivateDirectoryHelper<'a> {
         (self.update_forest(forest).await.unwrap(), root_dir.header.get_private_ref())
     }
 
-    pub async fn ls_files(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> Vec<(String, Metadata)> {
+    pub async fn ls_files(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> Result<Vec<(String, Metadata)>, String> {
 
-        let PrivateOpResult { result, .. } = root_dir
+        let res = root_dir
             .ls(path_segments, true, forest, &mut self.store)
-            .await
-            .unwrap();
-        result
+            .await;
+        if res.is_ok() {
+            let PrivateOpResult { result, .. } = res.ok().unwrap();
+            Ok(result)
+        } else {
+            trace!("wnfsError occured in ls_files: {:?}", res.as_ref().err().unwrap().to_string());
+            Err(res.err().unwrap().to_string())
+        }
     }
 
 }
@@ -465,7 +470,7 @@ impl<'a> PrivateDirectoryHelper<'a> {
         return runtime.block_on(self.rm(forest, root_dir, path_segments));
     }
 
-    pub fn synced_ls_files(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> Vec<(String, Metadata)>
+    pub fn synced_ls_files(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> Result<Vec<(String, Metadata)>, String>
     {
         let runtime =
             tokio::runtime::Runtime::new().expect("Unable to create a runtime");
