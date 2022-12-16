@@ -193,7 +193,7 @@ impl<'a> PrivateDirectoryHelper<'a> {
         
     }
 
-    pub async fn init(&mut self, forest: Rc<PrivateForest>, wnfs_key: Vec<u8>) -> (Cid, PrivateRef) {
+    pub async fn init(&mut self, forest: Rc<PrivateForest>, wnfs_key: Vec<u8>) -> Result<(Cid, PrivateRef), String> {
         let ratchet_seed: [u8; 32];
         let inumber: [u8; 32];
         if wnfs_key.is_empty() {
@@ -222,7 +222,7 @@ impl<'a> PrivateDirectoryHelper<'a> {
         let private_ref = root_dir.header.get_private_ref(); 
         let name = root_dir.header.get_saturated_name();
         
-        let forest = forest 
+        let forest_res = forest 
             .put( 
                 name, 
                 &private_ref, 
@@ -230,22 +230,22 @@ impl<'a> PrivateDirectoryHelper<'a> {
                 &mut self.store, 
                 &mut self.rng, 
             ) 
-            .await
-            .unwrap();
+            .await;
+        if forest_res.is_ok() {
         
-        let init_private_ref = root_dir.header.get_private_ref();
+            let init_private_ref = root_dir.header.get_private_ref();
 
-        (self.update_forest(forest).await.unwrap(), init_private_ref)
-
-        /*let PrivateOpResult { root_dir, forest, .. } = dir
-            .as_dir()
-            .unwrap()
-            .mkdir(&["root".into()], true, Utc::now(), forest, &mut self.store,&mut self.rng)
-            .await
-            .unwrap();
-        let init_private_ref = root_dir.header.get_private_ref();
-        
-        (self.update_forest(forest).await.unwrap(), init_private_ref)*/
+            let update_res = self.update_forest(forest_res.ok().unwrap()).await;
+            if update_res.is_ok() {
+                Ok((update_res.ok().unwrap(), init_private_ref))
+            }else {
+                trace!("wnfsError occured in init: {:?}", update_res.as_ref().err().unwrap().to_string());
+                Err(update_res.err().unwrap().to_string())
+            }
+        } else {
+            trace!("wnfsError occured in init: {:?}", forest_res.as_ref().err().unwrap().to_string());
+            Err(forest_res.err().unwrap().to_string())
+        }
     }
 
     fn get_file_as_byte_vec(&mut self, filename: &String) -> Result<Vec<u8>, String> {
@@ -323,9 +323,14 @@ impl<'a> PrivateDirectoryHelper<'a> {
     }
 
     pub async fn read_file_to_path(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String], filename: &String) -> String {
-        let file_content = self.read_file(forest, root_dir, path_segments).await.unwrap();
-        self.write_byte_vec_to_file(filename, file_content);
-        filename.to_string()
+        let file_content_res = self.read_file(forest, root_dir, path_segments).await;
+        if file_content_res.is_some() {
+            self.write_byte_vec_to_file(filename, file_content_res.unwrap());
+            filename.to_string()
+        } else {
+            trace!("wnfsError occured in read_file_to_path: ");
+            return "".to_string();
+        }
     }
 
     pub async fn read_file(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> Option<Vec<u8>> {
@@ -339,13 +344,24 @@ impl<'a> PrivateDirectoryHelper<'a> {
     }
 
 
-    pub async fn mkdir(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> (Cid, PrivateRef) {
-        let PrivateOpResult { forest, root_dir, .. } = root_dir
+    pub async fn mkdir(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> Result<(Cid, PrivateRef), String> {
+        let res = root_dir
             .mkdir(path_segments, true, Utc::now(), forest, &mut self.store,&mut self.rng)
-            .await
-            .unwrap();
+            .await;
+        if res.is_ok() {
+            let PrivateOpResult { forest, root_dir, .. } = res .unwrap();
 
-        (self.update_forest(forest).await.unwrap(), root_dir.header.get_private_ref())
+            let update_res = self.update_forest(forest).await;
+            if update_res.is_ok() {
+                Ok((update_res.ok().unwrap(), root_dir.header.get_private_ref()))
+            } else {
+                trace!("wnfsError occured in mkdir: {:?}", update_res.as_ref().err().unwrap());
+                Err(update_res.err().unwrap())
+            }
+        } else {
+            trace!("wnfsError occured in mkdir: {:?}", res.as_ref().err().unwrap());
+            Err(res.err().unwrap().to_string())
+        }
     }
 
 
@@ -400,7 +416,7 @@ impl<'a> PrivateDirectoryHelper<'a> {
         return runtime.block_on(self.get_root_dir(forest, private_ref));
     }
 
-    pub fn synced_init(&mut self, forest: Rc<PrivateForest>, wnfs_key: Vec<u8>) -> (Cid, PrivateRef)
+    pub fn synced_init(&mut self, forest: Rc<PrivateForest>, wnfs_key: Vec<u8>) -> Result<(Cid, PrivateRef), String>
     {
         let runtime =
             tokio::runtime::Runtime::new().expect("Unable to create a runtime");
@@ -435,7 +451,7 @@ impl<'a> PrivateDirectoryHelper<'a> {
         return runtime.block_on(self.read_file(forest, root_dir, path_segments));
     }
 
-    pub fn synced_mkdir(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> (Cid, PrivateRef)
+    pub fn synced_mkdir(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> Result<(Cid, PrivateRef), String>
     {
         let runtime =
             tokio::runtime::Runtime::new().expect("Unable to create a runtime");

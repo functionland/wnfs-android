@@ -30,7 +30,7 @@ public final class Fs {
             if(res != null && !res.isEmpty()) {
                 return res;
             } else {
-                throw new Exception("An Error Occured in Fs.createPrivateForest");
+                throw new Exception("An Error Occured in Fs.createPrivateForest Search logs for wnfsError to find out more.");
             }
         }
         catch(Exception e) {
@@ -44,7 +44,7 @@ public final class Fs {
             if(res != null && !res.isEmpty()) {
                 return res;
             } else {
-                throw new Exception("An Error Occured in Fs.getPrivateRef");
+                throw new Exception("An Error Occured in Fs.getPrivateRef Search logs for wnfsError to find out more.");
             }
         }
         catch(Exception e) {
@@ -52,8 +52,18 @@ public final class Fs {
         }
     }
 
-    public static Config createRootDir(Datastore datastore, String cid, byte[] wnfsKey) {
-        return createRootDirNative(datastore, cid, wnfsKey);
+    public static Config createRootDir(Datastore datastore, String cid, byte[] wnfsKey) throws Exception {
+        try {
+            Config res = createRootDirNative(datastore, cid, wnfsKey);
+            if(res != null) {
+                return res;
+            } else {
+                throw new Exception("An Error Occured in Fs.createRootDir. Search logs for wnfsError to find out more.");
+            }
+        } 
+        catch(Exception e) {
+            throw new Exception(e.getMessage());
+        }
     }
 
     public static Config writeFileFromPath(Datastore datastore, String cid, String privateRef, String path, String filename) throws Exception {
@@ -62,7 +72,7 @@ public final class Fs {
             if(res != null) {
                 return res;
             } else {
-                throw new Exception("An Error Occured in Fs.writeFileFromPath");
+                throw new Exception("An Error Occured in Fs.writeFileFromPath Search logs for wnfsError to find out more.");
             }
         } 
         catch(Exception e) {
@@ -76,7 +86,7 @@ public final class Fs {
             if(res != null) {
                 return res;
             } else {
-                throw new Exception("An Error Occured in Fs.writeFile");
+                throw new Exception("An Error Occured in Fs.writeFile Search logs for wnfsError to find out more.");
             }
         } 
         catch(Exception e) {
@@ -88,16 +98,36 @@ public final class Fs {
         return lsNative(datastore, cid, privateRef, path);
     }
 
-    public static Config mkdir(Datastore datastore, String cid, String privateRef, String path) {
-        return mkdirNative(datastore, cid, privateRef, path);
+    public static Config mkdir(Datastore datastore, String cid, String privateRef, String path) throws Exception {
+        try {
+            Config res = mkdirNative(datastore, cid, privateRef, path);
+            if(res != null) {
+                return res;
+            } else {
+                throw new Exception("An Error Occured in Fs.mkdir Search logs for wnfsError to find out more.");
+            }
+        } 
+        catch(Exception e) {
+            throw new Exception(e.getMessage());
+        }
     }
 
     public static Config rm(Datastore datastore, String cid, String privateRef, String path) {
         return rmNative(datastore, cid, privateRef, path);
     }
 
-    public static String readFileToPath(Datastore datastore, String cid, String privateRef, String path, String filename) {
-        return readFileToPathNative(datastore, cid, privateRef, path, filename);
+    public static String readFileToPath(Datastore datastore, String cid, String privateRef, String path, String filename) throws Exception {
+        try{
+            String res = readFileToPathNative(datastore, cid, privateRef, path, filename);
+            if(res != null && !res.isEmpty()) {
+                return res;
+            } else {
+                throw new Exception("An Error Occured in Fs.readFileToPathNative Search logs for wnfsError to find out more.");
+            }
+        }
+        catch(Exception e) {
+            throw new Exception(e.getMessage());
+        }
     }
 
     public static byte[] readFile(Datastore datastore, String cid, String privateRef, String path) {
