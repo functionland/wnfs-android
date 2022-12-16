@@ -5,6 +5,8 @@
 pub mod android {
     extern crate jni;
 
+    use std::collections::hash_map;
+
     use jni::objects::{JClass, JObject, JString, JValue, JMap, JList};
     use jni::signature::JavaType;
     use jni::sys::{jbyteArray, jobject, jstring, jcharArray, jsize};
@@ -473,25 +475,23 @@ pub mod android {
                 let root_dir = root_dir_res.ok().unwrap();
                 let path_segments = prepare_path_segments(env, jni_path_segments);
                 let ls_res = helper.synced_ls_files(forest.to_owned(), root_dir, &path_segments);
-                //if ls_res.is_ok() {
+                if ls_res.is_ok() {
                     let output =
                         prepare_ls_output(env, ls_res.ok().unwrap());
                     trace!("**********************lsNative finished**************");
-                    output
-                /* } else {
-                    env.new_string("".to_string())
-                        .expect("Failed to create new jstring")
-                        .into_inner()
-                }*/
+                    if output.is_ok() {
+                        return output.ok().unwrap();
+                    } else {
+                        return JObject::null().into_inner();
+                    }
+                } else {
+                    return JObject::null().into_inner();
+                }
             } else {
-                env.new_string("".to_string())
-                .expect("Failed to create new jstring")
-                .into_inner()
+                return JObject::null().into_inner();
             }
         } else {
-            env.new_string("".to_string())
-            .expect("Failed to create new jstring")
-            .into_inner()
+            return JObject::null().into_inner();
         }
     }
 
@@ -578,44 +578,72 @@ pub mod android {
             .collect()
     }
 
-    pub fn prepare_ls_output(env: JNIEnv, ls_result: Vec<(String, Metadata)>) -> jobject {
-        let map_class = env.find_class("java/util/HashMap").unwrap();
-        let mut hash_map = env.alloc_object ( map_class ).unwrap();
-        //let map_len =  &[JValue::from(ls_result.len().into())];
-        //let constructor = env.get_method_id(map_class, "<init>", "(I)V").unwrap();
-        //let hash_map = env.new_object(mapClass, constructor, map_len).unwrap();
+    pub fn prepare_ls_output(env: JNIEnv, ls_result: Vec<(String, Metadata)>) -> Result<jobject, String> {
+        let map_class_res = env.find_class("java/util/HashMap");
+        if map_class_res.is_ok() {
+            let map_class = map_class_res.ok().unwrap();
+            let hash_map_res = env.alloc_object ( map_class );
+            if hash_map_res.is_ok() {
+                let mut hash_map = hash_map_res.ok().unwrap();
+                //let map_len =  &[JValue::from(ls_result.len().into())];
+                //let constructor = env.get_method_id(map_class, "<init>", "(I)V").unwrap();
+                //let hash_map = env.new_object(mapClass, constructor, map_len).unwrap();
 
-        let put = env.get_method_id(map_class, "put", "(Ljava/lang/String;Ljava/lang/String;;Ljava/lang/String;)Ljava/lang/Object;").unwrap();
-        
+                let put_res = env.get_method_id(map_class, "put", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;");
+                
+                if put_res.is_ok() {
+                    let put = put_res.ok().unwrap();
 
-        
+                    //let mut response: HashMap<String, String, String> = HashMap::new();
+                    //let h: JObject;
+                    for item in ls_result.iter() {
+                        let hash_map_res = env
+                        .call_method_unchecked(
+                            hash_map,
+                            put,
+                            JavaType::Object(String::from("java/util/HashMap")),
+                            &[
+                                JValue::from(env.new_string(item.0.clone().to_string()).unwrap())
+                                , JValue::from(env.new_string(item.1.clone().get_created().unwrap().to_string()).unwrap())
+                                , JValue::from(env.new_string(item.1.clone().get_modified().unwrap().to_string()).unwrap())],
+                        );
+                        if hash_map_res.is_ok() {
+                            let hash_map_l = hash_map_res.ok().unwrap()
+                            .l();
+                            if hash_map_l.is_ok() {
+                                let hash_map =  hash_map_l.ok().unwrap();
+                            } else {
+                                trace!("wnfsError occured in prepare_ls_output.hash_map_l: {:?}", hash_map_l.as_ref().err().unwrap().to_string());
+                                //Err(hash_map_l.err().unwrap().to_string());
+                            }
+                        } else {
+                            trace!("wnfsError occured in prepare_ls_output.hash_map_res: {:?}", hash_map_res.as_ref().err().unwrap().to_string());
+                            //Err(hash_map_res.err().unwrap().to_string());
+                        }
 
-        //let mut response: HashMap<String, String, String> = HashMap::new();
-        //let h: JObject;
-        for item in ls_result.iter() {
-            hash_map = env
-            .call_method_unchecked(
-                hash_map,
-                put,
-                JavaType::Object(String::from("java/util/HashMap")),
-                &[
-                    JValue::from(env.new_string(item.0.clone().to_string()).unwrap())
-                    , JValue::from(env.new_string(item.1.clone().get_created().unwrap().to_string()).unwrap())
-                    , JValue::from(env.new_string(item.1.clone().get_modified().unwrap().to_string()).unwrap())],
-            ).unwrap()
-            .l()
-            .unwrap();
+                    /*let ls_arr = ls_result.iter().map(
+                        |s| 
+                            s.0.clone().to_string()
+                            +"|||"+
+                            &s.1.clone().get_created().unwrap().to_string()
+                            +"|||"+
+                            &s.1.clone().get_modified().unwrap().to_string()
+                        );*/
+                        
+                    }
+                    Ok(hash_map.into_inner())
+                } else {
+                    trace!("wnfsError occured in prepare_ls_output.put_res: {:?}", put_res.as_ref().err().unwrap().to_string());
+                    Err(put_res.err().unwrap().to_string())
+                }
+            } else {
+                trace!("wnfsError occured in prepare_ls_output.hash_map_res: {:?}", hash_map_res.as_ref().err().unwrap().to_string());
+                Err(hash_map_res.err().unwrap().to_string())
+            }
+        } else {
+            trace!("wnfsError occured in prepare_ls_output.map_class_res: {:?}", map_class_res.as_ref().err().unwrap().to_string());
+            Err(map_class_res.err().unwrap().to_string())
         }
-
-        /*let ls_arr = ls_result.iter().map(
-            |s| 
-                s.0.clone().to_string()
-                +"|||"+
-                &s.1.clone().get_created().unwrap().to_string()
-                +"|||"+
-                &s.1.clone().get_modified().unwrap().to_string()
-            );*/
-            hash_map.into_inner()
     }
 
     pub fn jbyte_array_to_vec(env: JNIEnv, jni_content: jbyteArray) -> Vec<u8> {
