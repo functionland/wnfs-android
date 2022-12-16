@@ -457,7 +457,7 @@ pub mod android {
         jni_cid: JString,
         jni_private_ref: JString,
         jni_path_segments: JString,
-    ) -> jobject {
+    ) -> jbyteArray {
         trace!("**********************lsNative started**************");
         let store = JNIStore::new(env, jni_fula_client);
         let block_store = FFIFriendlyBlockStore::new(Box::new(store));
@@ -480,7 +480,8 @@ pub mod android {
                         prepare_ls_output(env, ls_res.ok().unwrap());
                     trace!("**********************lsNative finished**************");
                     if output.is_ok() {
-                        return output.ok().unwrap();
+                        let res = output.ok().unwrap();
+                        return vec_to_jbyte_array(env, res);
                     } else {
                         return JObject::null().into_inner();
                     }
@@ -578,72 +579,32 @@ pub mod android {
             .collect()
     }
 
-    pub fn prepare_ls_output(env: JNIEnv, ls_result: Vec<(String, Metadata)>) -> Result<jobject, String> {
-        let map_class_res = env.find_class("java/util/HashMap");
-        if map_class_res.is_ok() {
-            let map_class = map_class_res.ok().unwrap();
-            let hash_map_res = env.alloc_object ( map_class );
-            if hash_map_res.is_ok() {
-                let mut hash_map = hash_map_res.ok().unwrap();
-                //let map_len =  &[JValue::from(ls_result.len().into())];
-                //let constructor = env.get_method_id(map_class, "<init>", "(I)V").unwrap();
-                //let hash_map = env.new_object(mapClass, constructor, map_len).unwrap();
+    pub fn prepare_ls_output(env: JNIEnv, ls_result: Vec<(String, Metadata)>) -> Result<Vec<u8>, String> {
 
-                let put_res = env.get_method_id(map_class, "put", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;");
-                
-                if put_res.is_ok() {
-                    let put = put_res.ok().unwrap();
+        let mut result: Vec<u8> = Vec::new();
 
-                    //let mut response: HashMap<String, String, String> = HashMap::new();
-                    //let h: JObject;
+        let item_separator = "...".to_owned();
+        let line_separator = "!!!".to_owned();
                     for item in ls_result.iter() {
-                        let hash_map_res = env
-                        .call_method_unchecked(
-                            hash_map,
-                            put,
-                            JavaType::Object(String::from("java/util/HashMap")),
-                            &[
-                                JValue::from(env.new_string(item.0.clone().to_string()).unwrap())
-                                , JValue::from(env.new_string(item.1.clone().get_created().unwrap().to_string()).unwrap())
-                                , JValue::from(env.new_string(item.1.clone().get_modified().unwrap().to_string()).unwrap())],
-                        );
-                        if hash_map_res.is_ok() {
-                            let hash_map_l = hash_map_res.ok().unwrap()
-                            .l();
-                            if hash_map_l.is_ok() {
-                                let hash_map =  hash_map_l.ok().unwrap();
-                            } else {
-                                trace!("wnfsError occured in prepare_ls_output.hash_map_l: {:?}", hash_map_l.as_ref().err().unwrap().to_string());
-                                //Err(hash_map_l.err().unwrap().to_string());
-                            }
-                        } else {
-                            trace!("wnfsError occured in prepare_ls_output.hash_map_res: {:?}", hash_map_res.as_ref().err().unwrap().to_string());
-                            //Err(hash_map_res.err().unwrap().to_string());
-                        }
-
-                    /*let ls_arr = ls_result.iter().map(
-                        |s| 
-                            s.0.clone().to_string()
-                            +"|||"+
-                            &s.1.clone().get_created().unwrap().to_string()
-                            +"|||"+
-                            &s.1.clone().get_modified().unwrap().to_string()
-                        );*/
                         
+
+                        let filename: String = item.0.clone().to_string().to_owned();
+                        let creation_time: String = item.1.clone().get_created().unwrap().to_string().to_owned();
+                        let modification_time: String = item.1.clone().get_modified().unwrap().to_string().to_owned();
+
+                        let row_string: String = format!("{}{}{}{}{}{}", 
+                            filename
+                            , item_separator
+                            , creation_time
+                            , item_separator
+                            , modification_time
+                            , line_separator
+                        );
+                        let row_byte = row_string.as_bytes().to_vec();
+                        result.append(&mut row_byte.to_owned());
                     }
-                    Ok(hash_map.into_inner())
-                } else {
-                    trace!("wnfsError occured in prepare_ls_output.put_res: {:?}", put_res.as_ref().err().unwrap().to_string());
-                    Err(put_res.err().unwrap().to_string())
-                }
-            } else {
-                trace!("wnfsError occured in prepare_ls_output.hash_map_res: {:?}", hash_map_res.as_ref().err().unwrap().to_string());
-                Err(hash_map_res.err().unwrap().to_string())
-            }
-        } else {
-            trace!("wnfsError occured in prepare_ls_output.map_class_res: {:?}", map_class_res.as_ref().err().unwrap().to_string());
-            Err(map_class_res.err().unwrap().to_string())
-        }
+                    Ok(result)
+
     }
 
     pub fn jbyte_array_to_vec(env: JNIEnv, jni_content: jbyteArray) -> Vec<u8> {

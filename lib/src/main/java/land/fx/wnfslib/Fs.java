@@ -2,8 +2,6 @@ package land.fx.wnfslib;
 
 import androidx.annotation.NonNull;
 
-import java.util.HashMap;
-
 public final class Fs {
 
     private static native String createPrivateForestNative(Datastore datastore);
@@ -16,7 +14,7 @@ public final class Fs {
 
     private static native Config writeFileNative(Datastore datastore, String cid, String privateRef, String path, byte[] content);
 
-    private static native HashMap lsNative(Datastore datastore, String cid, String privateRef, String path);
+    private static native byte[] lsNative(Datastore datastore, String cid, String privateRef, String path);
 
     private static native Config mkdirNative(Datastore datastore, String cid, String privateRef, String path);
 
@@ -96,10 +94,10 @@ public final class Fs {
         }
     }
 
-    public static String ls(Datastore datastore, String cid, String privateRef, String path) throws Exception {
+    public static byte[] ls(Datastore datastore, String cid, String privateRef, String path) throws Exception {
         try {
-            HashMap hashMap = lsNative(datastore, cid, privateRef, path);
-            return "";
+            byte[] lsResult = lsNative(datastore, cid, privateRef, path);
+            return lsResult;
         }
         catch(Exception e) {
             throw new Exception(e.getMessage());
