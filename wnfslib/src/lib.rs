@@ -5,9 +5,9 @@
 pub mod android {
     extern crate jni;
 
-    use jni::objects::{JClass, JObject, JString, JValue};
+    use jni::objects::{JClass, JObject, JString, JValue, JMap, JList};
     use jni::signature::JavaType;
-    use jni::sys::{jbyteArray, jobject, jstring};
+    use jni::sys::{jbyteArray, jobject, jstring, jcharArray, jsize};
     use jni::JNIEnv;
     use libipld::Cid;
     use libipld::cbor::cbor::NULL;
@@ -455,7 +455,7 @@ pub mod android {
         jni_cid: JString,
         jni_private_ref: JString,
         jni_path_segments: JString,
-    ) -> jstring {
+    ) -> jobject {
         trace!("**********************lsNative started**************");
         let store = JNIStore::new(env, jni_fula_client);
         let block_store = FFIFriendlyBlockStore::new(Box::new(store));
@@ -473,21 +473,25 @@ pub mod android {
                 let root_dir = root_dir_res.ok().unwrap();
                 let path_segments = prepare_path_segments(env, jni_path_segments);
                 let ls_res = helper.synced_ls_files(forest.to_owned(), root_dir, &path_segments);
-                if ls_res.is_ok() {
+                //if ls_res.is_ok() {
                     let output =
-                        prepare_ls_output(ls_res.ok().unwrap());
+                        prepare_ls_output(env, ls_res.ok().unwrap());
                     trace!("**********************lsNative finished**************");
-                    env.new_string(output.join("\n"))
+                    output
+                /* } else {
+                    env.new_string("".to_string())
                         .expect("Failed to create new jstring")
                         .into_inner()
-                } else {
-                    
-                }
+                }*/
             } else {
-
+                env.new_string("".to_string())
+                .expect("Failed to create new jstring")
+                .into_inner()
             }
         } else {
-
+            env.new_string("".to_string())
+            .expect("Failed to create new jstring")
+            .into_inner()
         }
     }
 
@@ -574,8 +578,44 @@ pub mod android {
             .collect()
     }
 
-    pub fn prepare_ls_output(ls_result: Vec<(String, Metadata)>) -> Vec<String> {
-        ls_result.iter().map(|s| s.0.clone()).collect()
+    pub fn prepare_ls_output(env: JNIEnv, ls_result: Vec<(String, Metadata)>) -> jobject {
+        let map_class = env.find_class("java/util/HashMap").unwrap();
+        let mut hash_map = env.alloc_object ( map_class ).unwrap();
+        //let map_len =  &[JValue::from(ls_result.len().into())];
+        //let constructor = env.get_method_id(map_class, "<init>", "(I)V").unwrap();
+        //let hash_map = env.new_object(mapClass, constructor, map_len).unwrap();
+
+        let put = env.get_method_id(map_class, "put", "(Ljava/lang/String;Ljava/lang/String;;Ljava/lang/String;)Ljava/lang/Object;").unwrap();
+        
+
+        
+
+        //let mut response: HashMap<String, String, String> = HashMap::new();
+        //let h: JObject;
+        for item in ls_result.iter() {
+            hash_map = env
+            .call_method_unchecked(
+                hash_map,
+                put,
+                JavaType::Object(String::from("java/util/HashMap")),
+                &[
+                    JValue::from(env.new_string(item.0.clone().to_string()).unwrap())
+                    , JValue::from(env.new_string(item.1.clone().get_created().unwrap().to_string()).unwrap())
+                    , JValue::from(env.new_string(item.1.clone().get_modified().unwrap().to_string()).unwrap())],
+            ).unwrap()
+            .l()
+            .unwrap();
+        }
+
+        /*let ls_arr = ls_result.iter().map(
+            |s| 
+                s.0.clone().to_string()
+                +"|||"+
+                &s.1.clone().get_created().unwrap().to_string()
+                +"|||"+
+                &s.1.clone().get_modified().unwrap().to_string()
+            );*/
+            hash_map.into_inner()
     }
 
     pub fn jbyte_array_to_vec(env: JNIEnv, jni_content: jbyteArray) -> Vec<u8> {

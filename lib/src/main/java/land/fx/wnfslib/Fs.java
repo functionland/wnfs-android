@@ -94,8 +94,14 @@ public final class Fs {
         }
     }
 
-    public static String ls(Datastore datastore, String cid, String privateRef, String path) {
-        return lsNative(datastore, cid, privateRef, path);
+    public static String ls(Datastore datastore, String cid, String privateRef, String path) throws Exception {
+        try {
+            let hashMap = lsNative(datastore, cid, privateRef, path);
+            return "";
+        }
+        catch(Exception e) {
+            throw new Exception(e.getMessage());
+        }
     }
 
     public static Config mkdir(Datastore datastore, String cid, String privateRef, String path) throws Exception {
