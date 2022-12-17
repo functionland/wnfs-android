@@ -10,6 +10,7 @@ pub mod android {
     use jni::sys::{jbyteArray, jobject, jstring};
     use jni::JNIEnv;
     use libipld::Cid;
+    use libipld::cbor::cbor::NULL;
     use log::{trace, Level};
     use wnfs::private::PrivateRef;
     use wnfs::Metadata;
@@ -123,7 +124,15 @@ pub mod android {
         let block_store = FFIFriendlyBlockStore::new(Box::new(store));
         let helper = &mut PrivateDirectoryHelper::new(block_store);
         trace!("**********************createPrivateForest finished**************");
-        serialize_cid(env, helper.synced_create_private_forest().unwrap()).into_inner()
+        let private_forest = helper.synced_create_private_forest();
+        if private_forest.is_ok() {
+            serialize_cid(env, private_forest.ok().unwrap()).into_inner()
+        } else {
+            env
+            .new_string("")
+            .expect("Failed to serialize result")
+            .into_inner()
+        }
     }
 
     #[no_mangle]
@@ -142,7 +151,14 @@ pub mod android {
         let forest_cid = deserialize_cid(env, jni_cid);
         let private_ref = helper.synced_get_private_ref(wnfs_key, forest_cid);
         trace!("**********************getPrivateRefNative finished**************");
-        serialize_private_ref(env, private_ref).into_inner()
+        if private_ref.is_ok() {
+            return serialize_private_ref(env, private_ref.ok().unwrap()).into_inner();
+        } else {
+            env
+            .new_string("")
+            .expect("Failed to serialize result")
+            .into_inner()
+        }
     }
 
     #[no_mangle]
@@ -159,12 +175,26 @@ pub mod android {
         let helper = &mut PrivateDirectoryHelper::new(block_store);
         let forest_cid = deserialize_cid(env, jni_cid);
         trace!("cid: {}", forest_cid);
-        let forest = helper.synced_load_forest(forest_cid).unwrap();
-        let wnfs_key: Vec<u8> = jbyte_array_to_vec(env, jni_wnfs_key);
-        let (cid, private_ref) = helper.synced_init(forest, wnfs_key);
-        trace!("pref: {:?}", private_ref);
-        trace!("**********************createRootDirNative finished**************");
-        serialize_config(env, cid, private_ref)
+        let forest_res = helper.synced_load_forest(forest_cid);
+        if forest_res.is_ok() {
+            let forest = forest_res.ok().unwrap();
+            let wnfs_key: Vec<u8> = jbyte_array_to_vec(env, jni_wnfs_key);
+            let init_res = helper.synced_init(forest, wnfs_key);
+            if init_res.is_ok() {
+                let (cid, private_ref) = init_res.ok().unwrap();
+                trace!("pref: {:?}", private_ref);
+                trace!("**********************createRootDirNative finished**************");
+                serialize_config(env, cid, private_ref)
+            } else {
+                let msg = init_res.err().unwrap();
+                trace!("wnfsError in Java_land_fx_wnfslib_Fs_createRootDirNative: {:?}", msg);
+                return JObject::null().into_inner();
+            }
+        } else {
+            let msg = forest_res.err().unwrap();
+            trace!("wnfsError in Java_land_fx_wnfslib_Fs_createRootDirNative: {:?}", msg);
+            return JObject::null().into_inner();
+        }
     }
 
     #[no_mangle]
@@ -184,22 +214,45 @@ pub mod android {
 
         let cid = deserialize_cid(env, jni_cid);
         let private_ref = deserialize_private_ref(env, jni_private_ref);
+        let old_private_ref = private_ref.to_owned();
+        let old_cid = cid.to_owned();
 
-        let forest = helper.synced_load_forest(cid).unwrap();
-        let root_dir = helper
-            .synced_get_root_dir(forest.to_owned(), private_ref)
-            .unwrap();
-        let path_segments = prepare_path_segments(env, jni_path_segments);
+        let forest_res = helper.synced_load_forest(cid);
+        if forest_res.is_ok() {
+            let forest = forest_res.ok().unwrap();
+            let root_dir_res = helper
+                .synced_get_root_dir(forest.to_owned(), private_ref);
+            if root_dir_res.is_ok() {
+                let root_dir = root_dir_res.ok().unwrap();
+                let path_segments = prepare_path_segments(env, jni_path_segments);
 
-        let filename: String = env
-            .get_string(jni_filename)
-            .expect("Failed to parse input path segments")
-            .into();
+                let filename: String = env
+                    .get_string(jni_filename)
+                    .expect("Failed to parse input path segments")
+                    .into();
 
-        let (cid, private_ref) =
-            helper.synced_write_file_from_path(forest.to_owned(), root_dir, &path_segments, &filename);
-        trace!("**********************writeFileFromPathNative finished**************");
-        serialize_config(env, cid, private_ref)
+                let write_file_result = 
+                    helper.synced_write_file_from_path(forest.to_owned(), root_dir, &path_segments, &filename);
+                    trace!("**********************writeFileFromPathNative finished**************");
+                if write_file_result.is_ok() {
+                    let (cid, private_ref) = write_file_result.ok().unwrap();
+                    return serialize_config(env, cid, private_ref);
+                } else {
+                    let msg = write_file_result.err().unwrap();
+                    trace!("wnfsError in Java_land_fx_wnfslib_Fs_writeFileFromPathNative: {:?}", msg);
+                    return JObject::null().into_inner();
+                }
+            } else {
+                let msg = root_dir_res.err().unwrap();
+                trace!("wnfsError in Java_land_fx_wnfslib_Fs_writeFileFromPathNative: {:?}", msg);
+                return JObject::null().into_inner();
+            }
+        } else {
+            let msg = forest_res.err().unwrap();
+            trace!("wnfsError in Java_land_fx_wnfslib_Fs_writeFileFromPathNative: {:?}", msg);
+            return JObject::null().into_inner();
+        }
+        
     }
 
     #[no_mangle]
@@ -262,10 +315,23 @@ pub mod android {
             .unwrap();
         let path_segments = prepare_path_segments(env, jni_path_segments);
         let content = jbyte_array_to_vec(env, jni_content);
-        let (cid, private_ref) =
+        //let (cid, private_ref) =
+        let write_file_res = 
             helper.synced_write_file(forest.to_owned(), root_dir, &path_segments, content);
         trace!("**********************writeFileNative finished**************");
-        serialize_config(env, cid, private_ref)
+        if write_file_res.is_ok() {
+            let (cid, private_ref) = write_file_res.ok().unwrap();
+            let config: jobject = serialize_config(env, cid, private_ref);
+            return config;
+        } else {
+            let msg = write_file_res
+                .err()
+                .unwrap();
+            trace!("wnfsError in Java_land_fx_wnfslib_Fs_writeFileNative: {:?}", msg);
+            return JObject::null().into_inner();
+            
+        }
+        
     }
 
     #[no_mangle]
@@ -318,14 +384,40 @@ pub mod android {
         let cid = deserialize_cid(env, jni_cid);
         let private_ref = deserialize_private_ref(env, jni_private_ref);
 
-        let forest = helper.synced_load_forest(cid).unwrap();
-        let root_dir = helper
-            .synced_get_root_dir(forest.to_owned(), private_ref)
-            .unwrap();
-        let path_segments = prepare_path_segments(env, jni_path_segments);
-        let (cid, private_ref) = helper.synced_mkdir(forest.to_owned(), root_dir, &path_segments);
-        trace!("**********************mkDirNative finished**************");
-        serialize_config(env, cid, private_ref)
+        let forest_res = helper.synced_load_forest(cid);
+        if forest_res.is_ok() {
+            let forest = forest_res.ok().unwrap();
+            let root_dir_res = helper
+                .synced_get_root_dir(forest.to_owned(), private_ref);
+                if root_dir_res.is_ok() {
+                    let root_dir = root_dir_res.ok().unwrap();
+                    let path_segments = prepare_path_segments(env, jni_path_segments);
+                    let mkdir_res = helper.synced_mkdir(forest.to_owned(), root_dir, &path_segments);
+                    if mkdir_res.is_ok() {
+                        let (cid, private_ref) = mkdir_res.ok().unwrap();
+                        trace!("**********************mkDirNative finished**************");
+                        serialize_config(env, cid, private_ref)
+                    } else {
+                        let msg = mkdir_res
+                            .err()
+                            .unwrap();
+                        trace!("wnfsError in Java_land_fx_wnfslib_Fs_mkdirNative: {:?}", msg);
+                        return JObject::null().into_inner();
+                    }
+                } else {
+                    let msg = root_dir_res
+                        .err()
+                        .unwrap();
+                    trace!("wnfsError in Java_land_fx_wnfslib_Fs_mkdirNative: {:?}", msg);
+                    return JObject::null().into_inner();
+                }
+        } else {
+            let msg = forest_res
+                .err()
+                .unwrap();
+            trace!("wnfsError in Java_land_fx_wnfslib_Fs_mkdirNative: {:?}", msg);
+            return JObject::null().into_inner();
+        }
     }
 
     #[no_mangle]
@@ -372,17 +464,31 @@ pub mod android {
         let cid = deserialize_cid(env, jni_cid);
         let private_ref = deserialize_private_ref(env, jni_private_ref);
 
-        let forest = helper.synced_load_forest(cid).unwrap();
-        let root_dir = helper
-            .synced_get_root_dir(forest.to_owned(), private_ref)
-            .unwrap();
-        let path_segments = prepare_path_segments(env, jni_path_segments);
-        let output =
-            prepare_ls_output(helper.synced_ls_files(forest.to_owned(), root_dir, &path_segments));
-        trace!("**********************lsNative finished**************");
-        env.new_string(output.join("\n"))
-            .expect("Failed to create new jstring")
-            .into_inner()
+        let forest_res = helper.synced_load_forest(cid);
+        if forest_res.is_ok() {
+            let forest = forest_res.ok().unwrap();
+            let root_dir_res = helper
+                .synced_get_root_dir(forest.to_owned(), private_ref);
+            if root_dir_res.is_ok() {
+                let root_dir = root_dir_res.ok().unwrap();
+                let path_segments = prepare_path_segments(env, jni_path_segments);
+                let ls_res = helper.synced_ls_files(forest.to_owned(), root_dir, &path_segments);
+                if ls_res.is_ok() {
+                    let output =
+                        prepare_ls_output(ls_res.ok().unwrap());
+                    trace!("**********************lsNative finished**************");
+                    env.new_string(output.join("\n"))
+                        .expect("Failed to create new jstring")
+                        .into_inner()
+                } else {
+                    
+                }
+            } else {
+
+            }
+        } else {
+
+        }
     }
 
     pub fn serialize_config(env: JNIEnv, cid: Cid, private_ref: PrivateRef) -> jobject {

@@ -63,3 +63,15 @@ Ensure you have committed your changes.
 ```
 
 Then simply push to the repo.
+
+
+## Roadmap
+
+Please note the following might not be done in order:
+
+- [x] Initial version with all functions included
+- [x] Add WNFS tree encryption key generation from an input (deterministically)
+- [ ] add error catching
+- [ ] add metadata to ls and make it array
+- [ ] Improve ls, read, and write functions to use a stream. ( :100: v1.0.0 Release here )
+- [ ] remove dependancy to custom version of wnfs
