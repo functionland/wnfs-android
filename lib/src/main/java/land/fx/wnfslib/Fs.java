@@ -112,7 +112,11 @@ public final class Fs {
     public static String ls(Datastore datastore, String cid, String privateRef, String path) throws Exception {
         try {
             JSONArray output = new JSONArray();
-            Log.d("wnfs", "JSONArray is reached");
+            Log.d("wnfs", "JSONArray is reached " +
+                    "; datastore type="+datastore.getClass().getName() +
+                    "; cid type="+cid.getClass().getName() +
+                    "; privateRef type="+privateRef.getClass().getName() +
+                    "; path type="+path.getClass().getName());
             byte[] lsResult = lsNative(datastore, cid, privateRef, path);
             Log.d("wnfs", "lsResult is reached");
             byte[] rowSeparatorPattern = {33, 33, 33}; //!!!
