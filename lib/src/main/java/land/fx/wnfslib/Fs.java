@@ -1,5 +1,7 @@
 package land.fx.wnfslib;
 
+import android.util.Log;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -102,7 +104,9 @@ public final class Fs {
     public static String ls(Datastore datastore, String cid, String privateRef, String path) throws Exception {
         try {
             JSONArray output = new JSONArray();
+            Log.d("wnfs", "JSONArray is reached");
             byte[] lsResult = lsNative(datastore, cid, privateRef, path);
+            Log.d("wnfs", "lsResult is reached");
             byte[] rowSeparatorPattern = {33, 33, 33}; //!!!
             byte[] itemSeparatorPattern = {63, 63, 63}; //???
             List<byte[]> rows = split(rowSeparatorPattern, lsResult);
