@@ -285,12 +285,21 @@ pub mod android {
             .expect("Failed to parse input path segments")
             .into();
         trace!("wnfs11 **********************readFileToPathNative filename created**************");
-        let result: String = helper.synced_read_file_to_path(forest.to_owned(), root_dir, &path_segments, &filename);
+        let result = helper.synced_read_file_to_path(forest.to_owned(), root_dir, &path_segments, &filename);
         trace!("wnfs11 **********************readFileToPathNative finished**************");
-        env
-            .new_string(filename)
-            .expect("Failed to serialize result")
-            .into_inner()
+        if result.is_ok() {
+            let res = result.ok().unwrap();
+            env
+                .new_string(filename)
+                .expect("Failed to serialize result")
+                .into_inner()
+        } else {
+            trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_readFileToPathNative {:?}", result.err().unwrap());
+            env
+                .new_string("".to_string())
+                .expect("Failed to serialize result")
+                .into_inner()
+        }
     }
 
     #[no_mangle]
@@ -360,7 +369,7 @@ pub mod android {
         let path_segments = prepare_path_segments(env, jni_path_segments);
         trace!("**********************readFileNative finished**************");
         let result = helper.synced_read_file(forest.to_owned(), root_dir, &path_segments);
-        if result.is_none() {
+        if result.is_err() {
             let emptyVec: Vec<u8> = Vec::new();
             return vec_to_jbyte_array(
                 env,
@@ -369,7 +378,7 @@ pub mod android {
         }
         vec_to_jbyte_array(
             env,
-            result.unwrap(),
+            result.ok().unwrap(),
         )
     }
 
@@ -448,9 +457,16 @@ pub mod android {
             .synced_get_root_dir(forest.to_owned(), private_ref)
             .unwrap();
         let path_segments = prepare_path_segments(env, jni_path_segments);
-        let (cid, private_ref) = helper.synced_rm(forest.to_owned(), root_dir, &path_segments);
+        let result = helper.synced_rm(forest.to_owned(), root_dir, &path_segments);
         trace!("**********************rmNative finished**************");
-        serialize_config(env, cid, private_ref)
+        if result.is_ok() {
+            let (cid, private_ref) = result.ok().unwrap();
+            return serialize_config(env, cid, private_ref);
+        }else {
+            trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_rmNative: {:?}", result.err().unwrap());
+            return JObject::null().into_inner();
+        }
+        
     }
 
     #[no_mangle]
@@ -526,29 +542,48 @@ pub mod android {
         let config_cls = env.find_class("land/fx/wnfslib/Config").unwrap();
         //let  handler_class = reinterpret_cast<jclass>(env.new_global_ref(config_cls));
         trace!("**********************serialize_config config_cls set**************");
-        let create_config_fn = env
+        let create_config_fn_res = env
             .get_static_method_id(
                 config_cls,
                 "create",
                 "(Ljava/lang/String;Ljava/lang/String;)Lland/fx/wnfslib/Config;",
-            )
-            .unwrap();
+            );
+        if create_config_fn_res.is_ok() {
+            let create_config_fn = create_config_fn_res.ok().unwrap();
 
-        trace!("**********************serialize_config create_config_fn set**************");
-        let cid = serialize_cid(env, cid);
-        let private_ref = serialize_private_ref(env, private_ref);
-        trace!("**********************serialize_config almost finished**************");
-        let config = env
-            .call_static_method_unchecked(
-                config_cls,
-                create_config_fn,
-                JavaType::Object(String::from("land/fx/wnfslib/Config")),
-                &[JValue::from(cid), JValue::from(private_ref)],
-            )
-            .unwrap()
-            .l()
-            .unwrap();
-        config.into_inner()
+            trace!("**********************serialize_config create_config_fn set**************");
+            let cid = serialize_cid(env, cid);
+            let private_ref = serialize_private_ref(env, private_ref);
+            trace!("**********************serialize_config almost finished**************");
+            let config_res = env
+                .call_static_method_unchecked(
+                    config_cls,
+                    create_config_fn,
+                    JavaType::Object(String::from("land/fx/wnfslib/Config")),
+                    &[JValue::from(cid), JValue::from(private_ref)],
+                );
+            if config_res.is_ok() {
+                let config_l = config_res
+                    .ok()
+                    .unwrap()
+                    .l();
+                if config_l.is_ok() {
+                    let config = config_l
+                        .ok()
+                        .unwrap();
+                    return config.into_inner();
+                } else {
+                    trace!("wnfsError occured in serialize_config config_l: {:?}", config_l.err().unwrap().to_string());
+                    return JObject::null().into_inner();
+                }
+            } else {
+                trace!("wnfsError occured in serialize_config config_res: {:?}", config_res.err().unwrap().to_string());
+                return JObject::null().into_inner();
+            }
+        } else {
+            trace!("wnfsError occured in serialize_config create_config_fn_res: {:?}", create_config_fn_res.err().unwrap().to_string());
+            return JObject::null().into_inner();
+        }
     }
 
     pub fn deserialize_cid(env: JNIEnv, jni_cid: JString) -> Cid {

@@ -102,7 +102,7 @@ class WNFSTest {
         //assertTrue(isNewFileCreated)
         file.writeBytes(testContent)
 
-
+/* 
         try {
             val config_err = writeFileFromPath(client, config.cid, config.private_ref, "root/testfrompath.txt", "file://"+pathString+"/test.txt")
             Log.d("AppMock", "config_err writeFile. config_err="+config_err)
@@ -110,7 +110,7 @@ class WNFSTest {
             assertNotNull("config should not be null", e)
             Log.d("AppMock", "config_err Error catched "+e.message);
         }
-        
+ */       
 
         config = writeFileFromPath(client, config.cid, config.private_ref, "root/testfrompath.txt", pathString+"/test.txt")
         Log.d("AppMock", "config writeFile. cid="+config.cid+" & private_ref="+config.private_ref)
@@ -129,11 +129,12 @@ class WNFSTest {
         assertNotNull("contentfrompathtopath should not be null", contentfrompathtopath)
         val readcontent: ByteArray = File(contentfrompathtopath).readBytes()
         assert(readcontent contentEquals "Hello, World!".toByteArray())
-        Log.d("AppMock", "readFileFromPathOfReadTo. content="+readcontent.toString())
+        Log.d("AppMock", "readFileFromPathOfReadTo. content="+String(readcontent))
 
         config = rm(client, config.cid, config.private_ref, "root/testfrompath.txt")
         val content2 = readFile(client, config.cid, config.private_ref, "root/testfrompath.txt")
-        assertNull(content2)
+        Log.d("AppMock", "rm. content="+String(content2))
+        assert(content2 contentEquals "".toByteArray())
 
 
         config = writeFile(client, config.cid, config.private_ref, "root/test.txt", "Hello, World!".toByteArray())
