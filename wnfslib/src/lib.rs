@@ -5,9 +5,11 @@
 pub mod android {
     extern crate jni;
 
-    use jni::objects::{JClass, JObject, JString, JValue};
+    use std::collections::hash_map;
+
+    use jni::objects::{JClass, JObject, JString, JValue, JMap, JList};
     use jni::signature::JavaType;
-    use jni::sys::{jbyteArray, jobject, jstring};
+    use jni::sys::{jbyteArray, jobject, jstring, jcharArray, jsize};
     use jni::JNIEnv;
     use libipld::Cid;
     use libipld::cbor::cbor::NULL;
@@ -455,7 +457,7 @@ pub mod android {
         jni_cid: JString,
         jni_private_ref: JString,
         jni_path_segments: JString,
-    ) -> jstring {
+    ) -> jbyteArray {
         trace!("**********************lsNative started**************");
         let store = JNIStore::new(env, jni_fula_client);
         let block_store = FFIFriendlyBlockStore::new(Box::new(store));
@@ -475,19 +477,22 @@ pub mod android {
                 let ls_res = helper.synced_ls_files(forest.to_owned(), root_dir, &path_segments);
                 if ls_res.is_ok() {
                     let output =
-                        prepare_ls_output(ls_res.ok().unwrap());
+                        prepare_ls_output(env, ls_res.ok().unwrap());
                     trace!("**********************lsNative finished**************");
-                    env.new_string(output.join("\n"))
-                        .expect("Failed to create new jstring")
-                        .into_inner()
+                    if output.is_ok() {
+                        let res = output.ok().unwrap();
+                        return vec_to_jbyte_array(env, res);
+                    } else {
+                        return JObject::null().into_inner();
+                    }
                 } else {
-                    
+                    return JObject::null().into_inner();
                 }
             } else {
-
+                return JObject::null().into_inner();
             }
         } else {
-
+            return JObject::null().into_inner();
         }
     }
 
@@ -574,8 +579,32 @@ pub mod android {
             .collect()
     }
 
-    pub fn prepare_ls_output(ls_result: Vec<(String, Metadata)>) -> Vec<String> {
-        ls_result.iter().map(|s| s.0.clone()).collect()
+    pub fn prepare_ls_output(env: JNIEnv, ls_result: Vec<(String, Metadata)>) -> Result<Vec<u8>, String> {
+
+        let mut result: Vec<u8> = Vec::new();
+
+        let item_separator = "???".to_owned();
+        let line_separator = "!!!".to_owned();
+                    for item in ls_result.iter() {
+                        
+
+                        let filename: String = item.0.clone().to_string().to_owned();
+                        let creation_time: String = item.1.clone().get_created().unwrap().to_string().to_owned();
+                        let modification_time: String = item.1.clone().get_modified().unwrap().to_string().to_owned();
+
+                        let row_string: String = format!("{}{}{}{}{}{}", 
+                            filename
+                            , item_separator
+                            , creation_time
+                            , item_separator
+                            , modification_time
+                            , line_separator
+                        );
+                        let row_byte = row_string.as_bytes().to_vec();
+                        result.append(&mut row_byte.to_owned());
+                    }
+                    Ok(result)
+
     }
 
     pub fn jbyte_array_to_vec(env: JNIEnv, jni_content: jbyteArray) -> Vec<u8> {

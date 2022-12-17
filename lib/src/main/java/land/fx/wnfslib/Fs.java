@@ -1,6 +1,11 @@
 package land.fx.wnfslib;
 
-import androidx.annotation.NonNull;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import org.json.JSONObject;
+import org.json.JSONArray;
 
 public final class Fs {
 
@@ -14,7 +19,7 @@ public final class Fs {
 
     private static native Config writeFileNative(Datastore datastore, String cid, String privateRef, String path, byte[] content);
 
-    private static native String lsNative(Datastore datastore, String cid, String privateRef, String path);
+    private static native byte[] lsNative(Datastore datastore, String cid, String privateRef, String path);
 
     private static native Config mkdirNative(Datastore datastore, String cid, String privateRef, String path);
 
@@ -94,8 +99,45 @@ public final class Fs {
         }
     }
 
-    public static String ls(Datastore datastore, String cid, String privateRef, String path) {
-        return lsNative(datastore, cid, privateRef, path);
+    public static String ls(Datastore datastore, String cid, String privateRef, String path) throws Exception {
+        try {
+            JSONArray output = new JSONArray();
+            byte[] lsResult = lsNative(datastore, cid, privateRef, path);
+            byte[] rowSeparatorPattern = {33, 33, 33}; //!!!
+            byte[] itemSeparatorPattern = {63, 63, 63}; //???
+            List<byte[]> rows = split(rowSeparatorPattern, lsResult);
+            for (byte[] element : rows) {
+                JSONObject obj = new JSONObject();
+                List<byte[]> rowDetails = split(itemSeparatorPattern, element);
+                if (!rowDetails.isEmpty()) {
+                    String name = new String(rowDetails.get(0), StandardCharsets.UTF_8);
+                    if(name != null && !name.isEmpty()) {
+                        obj.put("name", name);
+                        if(rowDetails.size() >= 2) {
+                            String creation = new String(rowDetails.get(1), StandardCharsets.UTF_8);
+                            obj.put("creation", creation);
+                        } else {
+                            obj.put("creation", "");
+                        }
+                        if(rowDetails.size() >= 3) {
+                            String modification = new String(rowDetails.get(2), StandardCharsets.UTF_8);
+                            obj.put("modification", modification);
+                        } else {
+                            obj.put("modification", "");
+                        }
+                        output.put(obj);
+                    }
+                }
+                
+            }
+
+            String textOutput = output.toString();
+
+            return textOutput;
+        }
+        catch(Exception e) {
+            throw new Exception(e.getMessage());
+        }
     }
 
     public static Config mkdir(Datastore datastore, String cid, String privateRef, String path) throws Exception {
@@ -135,6 +177,29 @@ public final class Fs {
     }
 
     public static native void initRustLogger();
+
+    private static boolean isMatch(byte[] pattern, byte[] input, int pos) {
+        for(int i=0; i< pattern.length; i++) {
+            if(pattern[i] != input[pos+i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static List<byte[]> split(byte[] pattern, byte[] input) {
+        List<byte[]> l = new LinkedList<>();
+        int blockStart = 0;
+        for(int i=0; i<input.length; i++) {
+            if(isMatch(pattern,input,i)) {
+                l.add(Arrays.copyOfRange(input, blockStart, i));
+                blockStart = i+pattern.length;
+                i = blockStart;
+            }
+        }
+        l.add(Arrays.copyOfRange(input, blockStart, input.length ));
+        return l;
+    }
 }
 
 
