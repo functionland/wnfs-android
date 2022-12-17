@@ -158,34 +158,46 @@ impl<'a> PrivateDirectoryHelper<'a> {
             .await;
             if fetched_node.is_ok() {
 
-                let latest_dir_res = {
-                    let tmp = fetched_node
-                        .ok()
-                        .unwrap()
-                        .unwrap()
-                        .as_dir()
-                        .unwrap();
-                    tmp.get_node(
-                        &[], 
-                        true, 
-                        forest_unwrapped,  
-                        &mut self.store
-                    )
-                        .await
-                        .unwrap()
-                        .result
-                        .unwrap()
-                        .as_dir()
-                };
-                if latest_dir_res.is_ok() {
-                    let latest_dir = latest_dir_res.ok().unwrap();
+                let tmp = fetched_node
+                    .ok()
+                    .unwrap()
+                    .unwrap()
+                    .as_dir();
+                if tmp.is_ok() {
 
-                    let private_ref = latest_dir.header.get_private_ref();
+                        let tmp_node = tmp.ok()
+                            .unwrap()
+                            .get_node(
+                                &[], 
+                                true, 
+                                forest_unwrapped,  
+                                &mut self.store
+                            )
+                            .await;
+                        if tmp_node.is_ok() {
+                            let latest_dir_res = tmp_node.ok()
+                            .unwrap()
+                            .result
+                            .unwrap()
+                            .as_dir();
+                    
+                            if latest_dir_res.is_ok() {
+                                let latest_dir = latest_dir_res.ok().unwrap();
 
-                    Ok(private_ref)
+                                let private_ref = latest_dir.header.get_private_ref();
+
+                                Ok(private_ref)
+                            } else {
+                                trace!("wnfsError in get_private_ref: latest_dir_res {:?}", latest_dir_res.as_ref().err().unwrap().to_string());
+                                Err(latest_dir_res.err().unwrap().to_string())
+                            }
+                        } else {
+                            trace!("wnfsError in get_private_ref: tmp_node {:?}", tmp_node.as_ref().err().unwrap().to_string());
+                            Err(tmp_node.err().unwrap().to_string())
+                        }
                 } else {
-                    trace!("wnfsError in get_private_ref: latest_dir_res {:?}", latest_dir_res.as_ref().err().unwrap().to_string());
-                    Err(latest_dir_res.err().unwrap().to_string())
+                    trace!("wnfsError in get_private_ref: tmp {:?}", tmp.as_ref().err().unwrap().to_string());
+                    Err(tmp.err().unwrap().to_string())
                 }
             } else {
                 trace!("wnfsError in get_private_ref fetched_node: {:?}", fetched_node.as_ref().err().unwrap().to_string());
@@ -291,17 +303,25 @@ impl<'a> PrivateDirectoryHelper<'a> {
         
     }
 
-    fn write_byte_vec_to_file(&mut self, filename: &String, file_content: Vec<u8>) {
+    fn write_byte_vec_to_file(&mut self, filename: &String, file_content: Vec<u8>) -> Result<bool, String> {
         trace!("wnfs11 **********************write_byte_vec_to_file started**************filename={:?}", filename);
         trace!("wnfs11 **********************write_byte_vec_to_file started**************file_content={:?}", file_content);
-        let mut file = File::create(filename).unwrap_or_else(|_err: std::io::Error| {
-            trace!("**********************put_block first unwrap error**************");
-            panic!("HERE1: {:?}", _err)
-        });
-        trace!("wnfs11 **********************write_byte_vec_to_file write created**************");
-        file
-        .write_all(&file_content)
-        .expect("Unable to write data");
+        let file = File::create(filename);
+        if file.is_ok() {
+            let mut file_handler = file.ok().unwrap();
+            trace!("wnfs11 **********************write_byte_vec_to_file write created**************");
+            let write_res = file_handler
+            .write_all(&file_content);
+            if write_res.is_ok() {
+                Ok(true)
+            } else {
+                trace!("wnfsError occured in write_byte_vec_to_file on write_res {:?}", write_res.as_ref().err().unwrap().to_string());
+                Err(write_res.err().unwrap().to_string())
+            }
+        } else {
+            trace!("wnfsError occured in write_byte_vec_to_file on file {:?}", file.as_ref().err().unwrap().to_string());
+            Err(file.err().unwrap().to_string())
+        }
         
     }
 
@@ -330,10 +350,15 @@ impl<'a> PrivateDirectoryHelper<'a> {
     pub async fn read_file_to_path(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String], filename: &String) -> Result<String, String> {
         let file_content_res = self.read_file(forest, root_dir, path_segments).await;
         if file_content_res.is_ok() {
-            self.write_byte_vec_to_file(filename, file_content_res.ok().unwrap());
-            Ok(filename.to_string())
+            let res = self.write_byte_vec_to_file(filename, file_content_res.ok().unwrap());
+            if res.is_ok() {
+                Ok(filename.to_string())
+            } else {
+                trace!("wnfsError occured in read_file_to_path on res: {:?}", res.as_ref().err().unwrap().to_string());
+                Err(res.err().unwrap().to_string())
+            }
         } else {
-            trace!("wnfsError occured in read_file_to_path: {:?}", file_content_res.as_ref().err().unwrap().to_string());
+            trace!("wnfsError occured in read_file_to_path on file_content_res: {:?}", file_content_res.as_ref().err().unwrap().to_string());
             Err(file_content_res.err().unwrap().to_string())
         }
     }
