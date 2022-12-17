@@ -583,7 +583,7 @@ pub mod android {
 
         let mut result: Vec<u8> = Vec::new();
 
-        let item_separator = "...".to_owned();
+        let item_separator = "???".to_owned();
         let line_separator = "!!!".to_owned();
                     for item in ls_result.iter() {
                         

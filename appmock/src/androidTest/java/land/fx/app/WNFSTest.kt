@@ -80,14 +80,13 @@ class WNFSTest {
         assertNotNull("cid should not be null", config.cid)
         assertNotNull("private_ref should not be null", config.private_ref)
 
-        val fileNames_initial: ByteArray = ls(
+        val fileNames_initial: String = ls(
             client 
             , "bafyreieqp253whdfdrky7hxpqezfwbkjhjdbxcq4mcbp6bqf4jdbncbx4y" 
             , "{\"saturated_name_hash\":[229,31,96,28,24,238,207,22,36,150,191,37,235,68,191,144,219,250,5,97,85,208,156,134,137,74,25,209,6,66,250,127],\"content_key\":[172,199,245,151,207,21,26,76,52,109,93,57,118,232,9,230,149,46,37,137,174,42,119,29,102,175,25,149,213,204,45,15],\"revision_key\":[17,5,78,59,8,135,144,240,41,248,135,168,222,186,158,240,100,10,129,4,180,55,126,115,146,239,22,177,207,118,169,51]}"
             , "root/"
         )
-        val fileNames_initial_s = String(fileNames_initial, StandardCharsets.UTF_8)
-        Log.d("AppMock", "ls_initial. fileNames_initial="+fileNames_initial_s)
+        Log.d("AppMock", "ls_initial. fileNames_initial="+fileNames_initial)
 
         val testContent = "Hello, World!".toByteArray()
 
@@ -144,10 +143,9 @@ class WNFSTest {
         config = mkdir(client,  config.cid, config.private_ref, "root/test1")
         Log.d("AppMock", "config mkdir. cid="+config.cid+" & private_ref="+config.private_ref)
 
-        val fileNames: ByteArray = ls(client, config.cid, config.private_ref, "root")
-        val fileNames_s = String(fileNames, StandardCharsets.UTF_8)
-        Log.d("AppMock", "ls. fileNames="+fileNames_s)
-        assertEquals(fileNames, "test.txt...2022-12-16 21:25:51 UTC...2022-12-16 21:25:51 UTC!!!test1...2022-12-16 21:25:52 UTC...2022-12-16 21:25:52 UTC!!!".toByteArray())
+        val fileNames: String = ls(client, config.cid, config.private_ref, "root")
+        Log.d("AppMock", "ls. fileNames="+fileNames)
+        //assertEquals(fileNames, "[{\"name\":\"test.txt\",\"creation\":\"2022-12-17 00:36:02 UTC\",\"modification\":\"2022-12-17 00:36:02 UTC\"},{\"name\":\"test1\",\"creation\":\"\",\"modification\":\"]\"}]")
         
 
         val content = readFile(client, config.cid, config.private_ref, "root/test.txt")
@@ -163,8 +161,8 @@ class WNFSTest {
         Log.d("AppMock", "wnfs12 getPrivateRef. private_ref="+private_ref_reload)
         assertNotNull("private_ref should not be null", private_ref_reload)
 
-        val fileNames_reloaded: ByteArray = ls(client, config.cid, private_ref_reload, "root")
-        assertEquals(fileNames_reloaded, "test.txt\ntest1".toByteArray())
+        val fileNames_reloaded: String = ls(client, config.cid, private_ref_reload, "root")
+        //assertEquals(fileNames_reloaded, "test.txt\ntest1")
         
 
         val content_reloaded = readFile(client, config.cid, private_ref_reload, "root/test.txt")

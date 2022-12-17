@@ -103,7 +103,7 @@ public final class Fs {
         try {
             JSONArray output = new JSONArray();
             byte[] lsResult = lsNative(datastore, cid, privateRef, path);
-            byte[] rowSeparatorPattern = {124, 124, 124}; //!!!
+            byte[] rowSeparatorPattern = {33, 33, 33}; //!!!
             byte[] itemSeparatorPattern = {63, 63, 63}; //???
             List<byte[]> rows = split(rowSeparatorPattern, lsResult);
             for (byte[] element : rows) {
@@ -111,21 +111,24 @@ public final class Fs {
                 List<byte[]> rowDetails = split(itemSeparatorPattern, element);
                 if (!rowDetails.isEmpty()) {
                     String name = new String(rowDetails.get(0), StandardCharsets.UTF_8);
-                    obj.put("name",name);
-                    if(rowDetails.size() >= 2) {
-                        String creation = new String(rowDetails.get(1), StandardCharsets.UTF_8);
-                        obj.put("creation",creation);
-                    } else {
-                        obj.put("creation", "");
-                    }
-                    if(rowDetails.size() >= 3) {
-                        String modification = new String(rowDetails.get(2), StandardCharsets.UTF_8);
-                        obj.put("modification",modification);
-                    } else {
-                        obj.put("modification", "");
+                    if(name != null && !name.isEmpty()) {
+                        obj.put("name", name);
+                        if(rowDetails.size() >= 2) {
+                            String creation = new String(rowDetails.get(1), StandardCharsets.UTF_8);
+                            obj.put("creation", creation);
+                        } else {
+                            obj.put("creation", "");
+                        }
+                        if(rowDetails.size() >= 3) {
+                            String modification = new String(rowDetails.get(2), StandardCharsets.UTF_8);
+                            obj.put("modification", modification);
+                        } else {
+                            obj.put("modification", "");
+                        }
+                        output.put(obj);
                     }
                 }
-                output.put(obj);
+                
             }
 
             String textOutput = output.toString();
