@@ -361,7 +361,11 @@ pub mod android {
         trace!("**********************readFileNative finished**************");
         let result = helper.synced_read_file(forest.to_owned(), root_dir, &path_segments);
         if result.is_none() {
-            return JObject::null().into_inner();
+            let emptyVec: Vec<u8> = Vec::new();
+            return vec_to_jbyte_array(
+                env,
+                emptyVec,
+            );
         }
         vec_to_jbyte_array(
             env,
@@ -483,19 +487,37 @@ pub mod android {
                         let res = output.ok().unwrap();
                         return vec_to_jbyte_array(env, res);
                     } else {
-                        return JObject::null().into_inner();
+                        trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative output: {:?}", output.err().unwrap().to_string());
+
+                        let emptyVec: Vec<u8> = Vec::new();
+                        return vec_to_jbyte_array(
+                            env,
+                            emptyVec,
+                        );
                     }
                 } else {
                     trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative ls_res: {:?}", ls_res.err().unwrap().to_string());
-                    return JObject::null().into_inner();
+                    let emptyVec: Vec<u8> = Vec::new();
+                    return vec_to_jbyte_array(
+                        env,
+                        emptyVec,
+                    );
                 }
             } else {
                 trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative root_dir_res: {:?}", root_dir_res.err().unwrap().to_string());
-                return JObject::null().into_inner();
+                let emptyVec: Vec<u8> = Vec::new();
+                return vec_to_jbyte_array(
+                    env,
+                    emptyVec,
+                );
             }
         } else {
             trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative forest_res: {:?}", forest_res.err().unwrap().to_string());
-            return JObject::null().into_inner();
+            let emptyVec: Vec<u8> = Vec::new();
+            return vec_to_jbyte_array(
+                env,
+                emptyVec,
+            );
         }
     }
 
