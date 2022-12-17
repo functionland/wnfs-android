@@ -158,7 +158,7 @@ impl<'a> PrivateDirectoryHelper<'a> {
             .await;
             if fetched_node.is_ok() {
 
-                let latest_dir = {
+                let latest_dir_res = {
                     let tmp = fetched_node
                         .ok()
                         .unwrap()
@@ -176,18 +176,23 @@ impl<'a> PrivateDirectoryHelper<'a> {
                         .result
                         .unwrap()
                         .as_dir()
+                };
+                if latest_dir_res.is_ok() {
+                    let latest_dir = latest_dir_res.ok().unwrap();
+
+                    let private_ref = latest_dir.header.get_private_ref();
+
+                    Ok(private_ref)
+                } else {
+                    trace!("wnfsError in get_private_ref: latest_dir_res {:?}", latest_dir_res.as_ref().err().unwrap().to_string());
+                    Err(latest_dir_res.err().unwrap().to_string())
                 }
-                .unwrap();
-
-                let private_ref = latest_dir.header.get_private_ref();
-
-                Ok(private_ref)
             } else {
-                trace!("wnfsError in get_private_ref: {:?}", fetched_node.as_ref().err().unwrap().to_string());
+                trace!("wnfsError in get_private_ref fetched_node: {:?}", fetched_node.as_ref().err().unwrap().to_string());
                 Err(fetched_node.err().unwrap().to_string())
             }
         } else {
-            trace!("wnfsError in get_private_ref: {:?}", forest.as_ref().err().unwrap());
+            trace!("wnfsError in get_private_ref forest: {:?}", forest.as_ref().err().unwrap());
             Err(forest.err().unwrap())
         }
         
