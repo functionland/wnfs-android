@@ -486,12 +486,15 @@ pub mod android {
                         return JObject::null().into_inner();
                     }
                 } else {
+                    trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative ls_res: {:?}", ls_res.err().unwrap().to_string());
                     return JObject::null().into_inner();
                 }
             } else {
+                trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative root_dir_res: {:?}", root_dir_res.err().unwrap().to_string());
                 return JObject::null().into_inner();
             }
         } else {
+            trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative forest_res: {:?}", forest_res.err().unwrap().to_string());
             return JObject::null().into_inner();
         }
     }
@@ -587,21 +590,24 @@ pub mod android {
         let line_separator = "!!!".to_owned();
                     for item in ls_result.iter() {
                         
+                        let created = item.1.clone().get_created();
+                        let modification = item.1.clone().get_modified();
+                        if (created.is_some() && modification.is_some()) {
+                            let filename: String = item.0.clone().to_string().to_owned();
+                            let creation_time: String = created.unwrap().to_string().to_owned();
+                            let modification_time: String = modification.unwrap().to_string().to_owned();
 
-                        let filename: String = item.0.clone().to_string().to_owned();
-                        let creation_time: String = item.1.clone().get_created().unwrap().to_string().to_owned();
-                        let modification_time: String = item.1.clone().get_modified().unwrap().to_string().to_owned();
-
-                        let row_string: String = format!("{}{}{}{}{}{}", 
-                            filename
-                            , item_separator
-                            , creation_time
-                            , item_separator
-                            , modification_time
-                            , line_separator
-                        );
-                        let row_byte = row_string.as_bytes().to_vec();
-                        result.append(&mut row_byte.to_owned());
+                            let row_string: String = format!("{}{}{}{}{}{}", 
+                                filename
+                                , item_separator
+                                , creation_time
+                                , item_separator
+                                , modification_time
+                                , line_separator
+                            );
+                            let row_byte = row_string.as_bytes().to_vec();
+                            result.append(&mut row_byte.to_owned());
+                        }
                     }
                     Ok(result)
 
