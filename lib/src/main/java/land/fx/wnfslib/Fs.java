@@ -2,6 +2,8 @@ package land.fx.wnfslib;
 
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -31,6 +33,7 @@ public final class Fs {
 
     private static native byte[] readFileNative(Datastore datastore, String cid, String privateRef, String path);
 
+    @NonNull
     public static String createPrivateForest(Datastore datastore) throws Exception {
         try {
             String res = createPrivateForestNative(datastore);
@@ -45,6 +48,7 @@ public final class Fs {
         }
     }
 
+    @NonNull
     public static String getPrivateRef(Datastore datastore, byte[] wnfsKey, String cid) throws Exception {
         try {
             String res = getPrivateRefNative(datastore, wnfsKey, cid);
@@ -59,6 +63,7 @@ public final class Fs {
         }
     }
 
+    @NonNull
     public static Config createRootDir(Datastore datastore, String cid, byte[] wnfsKey) throws Exception {
         try {
             Config res = createRootDirNative(datastore, cid, wnfsKey);
@@ -73,6 +78,7 @@ public final class Fs {
         }
     }
 
+    @NonNull
     public static Config writeFileFromPath(Datastore datastore, String cid, String privateRef, String path, String filename) throws Exception {
         try {
             Config res = writeFileFromPathNative(datastore, cid, privateRef, path, filename);
@@ -87,6 +93,7 @@ public final class Fs {
         }
     }
 
+    @NonNull
     public static Config writeFile(Datastore datastore, String cid, String privateRef, String path, byte[] content) throws Exception {
         try {
             Config res = writeFileNative(datastore, cid, privateRef, path, content);
@@ -101,6 +108,7 @@ public final class Fs {
         }
     }
 
+    @NonNull
     public static String ls(Datastore datastore, String cid, String privateRef, String path) throws Exception {
         try {
             JSONArray output = new JSONArray();
@@ -115,7 +123,7 @@ public final class Fs {
                 List<byte[]> rowDetails = split(itemSeparatorPattern, element);
                 if (!rowDetails.isEmpty()) {
                     String name = new String(rowDetails.get(0), StandardCharsets.UTF_8);
-                    if(name != null && !name.isEmpty()) {
+                    if(!name.isEmpty()) {
                         obj.put("name", name);
                         if(rowDetails.size() >= 2) {
                             String creation = new String(rowDetails.get(1), StandardCharsets.UTF_8);
@@ -144,6 +152,7 @@ public final class Fs {
         }
     }
 
+    @NonNull
     public static Config mkdir(Datastore datastore, String cid, String privateRef, String path) throws Exception {
         try {
             Config res = mkdirNative(datastore, cid, privateRef, path);
@@ -162,6 +171,7 @@ public final class Fs {
         return rmNative(datastore, cid, privateRef, path);
     }
 
+    @NonNull
     public static String readFileToPath(Datastore datastore, String cid, String privateRef, String path, String filename) throws Exception {
         try{
             String res = readFileToPathNative(datastore, cid, privateRef, path, filename);
@@ -182,7 +192,7 @@ public final class Fs {
 
     public static native void initRustLogger();
 
-    private static boolean isMatch(byte[] pattern, byte[] input, int pos) {
+    private static boolean isMatch(@NonNull byte[] pattern, byte[] input, int pos) {
         for(int i=0; i< pattern.length; i++) {
             if(pattern[i] != input[pos+i]) {
                 return false;
@@ -191,7 +201,8 @@ public final class Fs {
         return true;
     }
 
-    private static List<byte[]> split(byte[] pattern, byte[] input) {
+    @NonNull
+    private static List<byte[]> split(byte[] pattern, @NonNull byte[] input) {
         List<byte[]> l = new LinkedList<>();
         int blockStart = 0;
         for(int i=0; i<input.length; i++) {
