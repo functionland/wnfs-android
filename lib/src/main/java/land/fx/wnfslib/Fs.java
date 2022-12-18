@@ -112,7 +112,7 @@ public final class Fs {
     public static String ls(Datastore datastore, String cid, String privateRef, String path) throws Exception {
         try {
             
-            Log.d("wnfs", "JSONArray is reached");
+            Log.d("wnfs", "JSONArray is reached2");
             String lsResult = lsNative(datastore, cid, privateRef, path);
             Log.d("wnfs", "lsResult is reached");
             /*JSONArray output = new JSONArray();
