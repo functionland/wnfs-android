@@ -114,7 +114,7 @@ public final class Fs {
             
             Log.d("wnfs", "JSONArray is reached2");
             String lsResult = lsNative(datastore, cid, privateRef, path);
-            Log.d("wnfs", "lsResult is reached");
+            Log.d("wnfs", "lsResult is reached: "+lsResult);
             /*JSONArray output = new JSONArray();
             byte[] rowSeparatorPattern = {33, 33, 33}; //!!!
             byte[] itemSeparatorPattern = {63, 63, 63}; //???
