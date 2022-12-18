@@ -109,9 +109,9 @@ public final class Fs {
     }
 
     @NonNull
-    public static String ls(Datastore datastore, String cid, String privateRef, String path) throws Exception {
+    public static byte[] ls(Datastore datastore, String cid, String privateRef, String path) throws Exception {
         try {
-            JSONArray output = new JSONArray();
+            /*JSONArray output = new JSONArray();
             Log.d("wnfs", "JSONArray is reached " +
                     "; datastore type="+datastore.getClass().getName() +
                     "; cid type="+cid.getClass().getName() +
@@ -148,7 +148,8 @@ public final class Fs {
             }
 
             String textOutput = output.toString();
-
+*/
+byte[] textOutput = lsNative(datastore, cid, privateRef, path);
             return textOutput;
         }
         catch(Exception e) {
