@@ -423,7 +423,12 @@ impl<'a> PrivateDirectoryHelper<'a> {
     pub async fn ls_files(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> Result<Vec<(String, Metadata)>, String> {
 
         let res = root_dir
-            .ls(path_segments, true, forest, &mut self.store)
+            .ls(
+                path_segments
+                , true
+                , forest
+                , &mut self.store
+            )
             .await;
         if res.is_ok() {
             let PrivateOpResult { result, .. } = res.ok().unwrap();

@@ -503,8 +503,10 @@ pub mod android {
                         let res = output.ok().unwrap();
                         return vec_to_jbyte_array(env, res);
                     } else {
-                        trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative output: {:?}", output.err().unwrap().to_string());
-
+                        let msg = format!("{:?}{:?}","wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative output: ", output.err().unwrap().to_string());
+                        trace!("{}", msg);
+                        let _ = env.throw(("java/lang/Exception", msg));
+                        env.exception_clear();
                         let emptyVec: Vec<u8> = Vec::new();
                         return vec_to_jbyte_array(
                             env,
@@ -512,7 +514,10 @@ pub mod android {
                         );
                     }
                 } else {
-                    trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative ls_res: {:?}", ls_res.err().unwrap().to_string());
+                    let msg = format!("{:?}{:?}","wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative ls_res: ", ls_res.err().unwrap().to_string());
+                    trace!("{}", msg);
+                    let _ = env.throw(("java/lang/Exception", msg));
+                    env.exception_clear();
                     let emptyVec: Vec<u8> = Vec::new();
                     return vec_to_jbyte_array(
                         env,
@@ -520,7 +525,10 @@ pub mod android {
                     );
                 }
             } else {
-                trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative root_dir_res: {:?}", root_dir_res.err().unwrap().to_string());
+                let msg = format!("{:?}{:?}","wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative root_dir_res: ", root_dir_res.err().unwrap().to_string());
+                trace!("{}", msg);
+                let _ = env.throw(("java/lang/Exception", msg));
+                env.exception_clear();
                 let emptyVec: Vec<u8> = Vec::new();
                 return vec_to_jbyte_array(
                     env,
@@ -528,7 +536,10 @@ pub mod android {
                 );
             }
         } else {
-            trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative forest_res: {:?}", forest_res.err().unwrap().to_string());
+            let msg = format!("{:?}{:?}","wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative forest_res: ", forest_res.err().unwrap().to_string());
+                trace!("{}", msg);
+                let _ = env.throw(("java/lang/Exception", msg));
+                env.exception_clear();
             let emptyVec: Vec<u8> = Vec::new();
             return vec_to_jbyte_array(
                 env,
