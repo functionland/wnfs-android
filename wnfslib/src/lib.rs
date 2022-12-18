@@ -501,13 +501,19 @@ pub mod android {
                         .expect("Failed to create new jstring")
                         .into_inner()
                 } else {
-                    
+                    env.new_string("oh my god".to_string())
+                        .expect("Failed to create new jstring")
+                        .into_inner()
                 }
             } else {
-
+                env.new_string("oh my god".to_string())
+                .expect("Failed to create new jstring")
+                .into_inner()
             }
         } else {
-
+            env.new_string("oh my god".to_string())
+            .expect("Failed to create new jstring")
+            .into_inner()
         }
     }
 
