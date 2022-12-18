@@ -5,11 +5,9 @@
 pub mod android {
     extern crate jni;
 
-    use std::collections::hash_map;
-
-    use jni::objects::{JClass, JObject, JString, JValue, JMap, JList};
+    use jni::objects::{JClass, JObject, JString, JValue};
     use jni::signature::JavaType;
-    use jni::sys::{jbyteArray, jobject, jstring, jcharArray, jsize};
+    use jni::sys::{jbyteArray, jobject, jstring};
     use jni::JNIEnv;
     use libipld::Cid;
     use libipld::cbor::cbor::NULL;
@@ -477,7 +475,7 @@ pub mod android {
         jni_cid: JString,
         jni_private_ref: JString,
         jni_path_segments: JString,
-    ) -> jbyteArray {
+    ) -> jstring {
         trace!("**********************lsNative started**************");
         let store = JNIStore::new(env, jni_fula_client);
         let block_store = FFIFriendlyBlockStore::new(Box::new(store));
@@ -497,54 +495,19 @@ pub mod android {
                 let ls_res = helper.synced_ls_files(forest.to_owned(), root_dir, &path_segments);
                 if ls_res.is_ok() {
                     let output =
-                        prepare_ls_output(env, ls_res.ok().unwrap());
+                        prepare_ls_output(ls_res.ok().unwrap());
                     trace!("**********************lsNative finished**************");
-                    if output.is_ok() {
-                        let res = output.ok().unwrap();
-                        return vec_to_jbyte_array(env, res);
-                    } else {
-                        let msg = format!("{:?}{:?}","wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative output: ", output.err().unwrap().to_string());
-                        trace!("{}", msg);
-                        let _ = env.throw(("java/lang/Exception", msg));
-                        env.exception_clear();
-                        let emptyVec: Vec<u8> = Vec::new();
-                        return vec_to_jbyte_array(
-                            env,
-                            emptyVec,
-                        );
-                    }
+                    env.new_string(output.join("\n"))
+                        .expect("Failed to create new jstring")
+                        .into_inner()
                 } else {
-                    let msg = format!("{:?}{:?}","wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative ls_res: ", ls_res.err().unwrap().to_string());
-                    trace!("{}", msg);
-                    let _ = env.throw(("java/lang/Exception", msg));
-                    env.exception_clear();
-                    let emptyVec: Vec<u8> = Vec::new();
-                    return vec_to_jbyte_array(
-                        env,
-                        emptyVec,
-                    );
+                    
                 }
             } else {
-                let msg = format!("{:?}{:?}","wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative root_dir_res: ", root_dir_res.err().unwrap().to_string());
-                trace!("{}", msg);
-                let _ = env.throw(("java/lang/Exception", msg));
-                env.exception_clear();
-                let emptyVec: Vec<u8> = Vec::new();
-                return vec_to_jbyte_array(
-                    env,
-                    emptyVec,
-                );
+
             }
         } else {
-            let msg = format!("{:?}{:?}","wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative forest_res: ", forest_res.err().unwrap().to_string());
-                trace!("{}", msg);
-                let _ = env.throw(("java/lang/Exception", msg));
-                env.exception_clear();
-            let emptyVec: Vec<u8> = Vec::new();
-            return vec_to_jbyte_array(
-                env,
-                emptyVec,
-            );
+
         }
     }
 
@@ -650,35 +613,8 @@ pub mod android {
             .collect()
     }
 
-    pub fn prepare_ls_output(env: JNIEnv, ls_result: Vec<(String, Metadata)>) -> Result<Vec<u8>, String> {
-
-        let mut result: Vec<u8> = Vec::new();
-
-        let item_separator = "???".to_owned();
-        let line_separator = "!!!".to_owned();
-                    for item in ls_result.iter() {
-                        
-                        let created = item.1.clone().get_created();
-                        let modification = item.1.clone().get_modified();
-                        if (created.is_some() && modification.is_some()) {
-                            let filename: String = item.0.clone().to_string().to_owned();
-                            let creation_time: String = created.unwrap().to_string().to_owned();
-                            let modification_time: String = modification.unwrap().to_string().to_owned();
-
-                            let row_string: String = format!("{}{}{}{}{}{}", 
-                                filename
-                                , item_separator
-                                , creation_time
-                                , item_separator
-                                , modification_time
-                                , line_separator
-                            );
-                            let row_byte = row_string.as_bytes().to_vec();
-                            result.append(&mut row_byte.to_owned());
-                        }
-                    }
-                    Ok(result)
-
+    pub fn prepare_ls_output(ls_result: Vec<(String, Metadata)>) -> Vec<String> {
+        ls_result.iter().map(|s| s.0.clone()).collect()
     }
 
     pub fn jbyte_array_to_vec(env: JNIEnv, jni_content: jbyteArray) -> Vec<u8> {
