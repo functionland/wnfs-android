@@ -23,7 +23,7 @@ public final class Fs {
 
     private static native Config writeFileNative(Datastore datastore, String cid, String privateRef, String path, byte[] content);
 
-    private static native String lsNative(Datastore datastore, String cid, String privateRef, String path);
+    private static native byte[] lsNative(Datastore datastore, String cid, String privateRef, String path);
 
     private static native Config mkdirNative(Datastore datastore, String cid, String privateRef, String path);
 
@@ -109,12 +109,12 @@ public final class Fs {
     }
 
     @NonNull
-    public static String ls(Datastore datastore, String cid, String privateRef, String path) throws Exception {
+    public static byte[] ls(Datastore datastore, String cid, String privateRef, String path) throws Exception {
         try {
             
             Log.d("wnfs", "JSONArray is reached2");
-            String lsResult = lsNative(datastore, cid, privateRef, path);
-            Log.d("wnfs", "lsResult is reached: "+lsResult);
+            byte[] lsResult = lsNative(datastore, cid, privateRef, path);
+            Log.d("wnfs", "lsResult is reached: ");
             /*JSONArray output = new JSONArray();
             byte[] rowSeparatorPattern = {33, 33, 33}; //!!!
             byte[] itemSeparatorPattern = {63, 63, 63}; //???

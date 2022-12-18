@@ -477,7 +477,7 @@ pub mod android {
         jni_cid: JString,
         jni_private_ref: JString,
         jni_path_segments: JString,
-    ) -> jstring {
+    ) -> jbyteArray {
         trace!("**********************lsNative started**************");
         let store = JNIStore::new(env, jni_fula_client);
         let block_store = FFIFriendlyBlockStore::new(Box::new(store));
@@ -501,38 +501,41 @@ pub mod android {
                     trace!("**********************lsNative finished**************");
                     if output.is_ok() {
                         let res = output.ok().unwrap();
-                        return env
-                            .new_string(res)
-                            .expect("Failed to serialize result")
-                            .into_inner();
+                        return vec_to_jbyte_array(
+                            env,
+                            res
+                        );
                     } else {
                         trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative output: {:?}", output.err().unwrap().to_string());
-
-                        env
-                            .new_string("")
-                            .expect("Failed to serialize result")
-                            .into_inner()
+                        let emptyBytes: Vec<u8> = vec![0];
+                        return vec_to_jbyte_array(
+                            env,
+                            emptyBytes
+                        );
                     }
                 } else {
                     trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative ls_res: {:?}", ls_res.err().unwrap().to_string());
-                    env
-                        .new_string("")
-                        .expect("Failed to serialize result")
-                        .into_inner()
+                    let emptyBytes: Vec<u8> = vec![0];
+                    return vec_to_jbyte_array(
+                        env,
+                        emptyBytes
+                    );
                 }
             } else {
                 trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative root_dir_res: {:?}", root_dir_res.err().unwrap().to_string());
-                env
-                    .new_string("")
-                    .expect("Failed to serialize result")
-                    .into_inner()
+                let emptyBytes: Vec<u8> = vec![0];
+                return vec_to_jbyte_array(
+                    env,
+                    emptyBytes
+                );
             }
         } else {
             trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative forest_res: {:?}", forest_res.err().unwrap().to_string());
-            env
-                .new_string("")
-                .expect("Failed to serialize result")
-                .into_inner()
+            let emptyBytes: Vec<u8> = vec![0];
+            return vec_to_jbyte_array(
+                env,
+                emptyBytes
+            );
         }
     }
 
@@ -638,7 +641,7 @@ pub mod android {
             .collect()
     }
 
-    pub fn prepare_ls_output(env: JNIEnv, ls_result: Vec<(String, Metadata)>) -> Result<String, String> {
+    pub fn prepare_ls_output(env: JNIEnv, ls_result: Vec<(String, Metadata)>) -> Result<Vec<u8>, String> {
 
         let mut result: Vec<u8> = Vec::new();
 
@@ -665,8 +668,7 @@ pub mod android {
                             result.append(&mut row_byte.to_owned());
                         }
                     }
-                    let string_result: String = String::from_utf8(result).expect("Found invalid UTF-8");
-                    Ok(string_result)
+                    Ok(result)
 
     }
 
