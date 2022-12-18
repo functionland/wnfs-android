@@ -152,6 +152,7 @@ public final class Fs {
             return textOutput;
         }
         catch(Exception e) {
+            Log.d("wnfs", "exception thrown in Fs.ls");
             throw new Exception(e.getMessage());
         }
     }
