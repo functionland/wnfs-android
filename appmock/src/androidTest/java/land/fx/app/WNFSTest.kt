@@ -144,14 +144,19 @@ class WNFSTest {
         config = mkdir(client,  config.cid, config.private_ref, "root/test1")
         Log.d("AppMock", "config mkdir. cid="+config.cid+" & private_ref="+config.private_ref)
 
-        val fileNames: String = ls(client, config.cid, config.private_ref, "root")
-        Log.d("AppMock", "ls. fileNames="+fileNames)
+        val fileNames_root: String = ls(client, config.cid, config.private_ref, "root")
+        Log.d("AppMock", "ls on root. fileNames_root="+fileNames_root)
         //assertEquals(fileNames, "[{\"name\":\"test.txt\",\"creation\":\"2022-12-17 00:36:02 UTC\",\"modification\":\"2022-12-17 00:36:02 UTC\"},{\"name\":\"test1\",\"creation\":\"\",\"modification\":\"]\"}]")
-        
+        val fileNames_test1: String = ls(client, config.cid, config.private_ref, "root/test1")
+        Log.d("AppMock", "ls on root/test1. fileNames_test1="+fileNames_test1)
+        //[]
+        val fileNames: String = ls(client, config.cid, config.private_ref, "")
+        Log.d("AppMock", "ls on /. fileNames="+fileNames)
+
 
         val content = readFile(client, config.cid, config.private_ref, "root/test.txt")
         assert(content contentEquals "Hello, World!".toByteArray())
-        Log.d("AppMock", "readFile. content="+content.toString())
+        //Log.d("AppMock", "readFile. content="+content.toString())
 
         Log.d("AppMock", "All tests before reload passed")
 
