@@ -501,38 +501,40 @@ pub mod android {
                     trace!("**********************lsNative finished**************");
                     if output.is_ok() {
                         let res = output.ok().unwrap();
-                        return vec_to_jbyte_array(env, res);
-                    } else {
-                        trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative output: {:?}", output.err().unwrap().to_string());
-
-                        let emptyVec: Vec<u8> = Vec::new();
                         return vec_to_jbyte_array(
                             env,
-                            emptyVec,
+                            res
+                        );
+                    } else {
+                        trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative output: {:?}", output.err().unwrap().to_string());
+                        let emptyBytes: Vec<u8> = vec![0];
+                        return vec_to_jbyte_array(
+                            env,
+                            emptyBytes
                         );
                     }
                 } else {
                     trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative ls_res: {:?}", ls_res.err().unwrap().to_string());
-                    let emptyVec: Vec<u8> = Vec::new();
+                    let emptyBytes: Vec<u8> = vec![0];
                     return vec_to_jbyte_array(
                         env,
-                        emptyVec,
+                        emptyBytes
                     );
                 }
             } else {
                 trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative root_dir_res: {:?}", root_dir_res.err().unwrap().to_string());
-                let emptyVec: Vec<u8> = Vec::new();
+                let emptyBytes: Vec<u8> = vec![0];
                 return vec_to_jbyte_array(
                     env,
-                    emptyVec,
+                    emptyBytes
                 );
             }
         } else {
             trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative forest_res: {:?}", forest_res.err().unwrap().to_string());
-            let emptyVec: Vec<u8> = Vec::new();
+            let emptyBytes: Vec<u8> = vec![0];
             return vec_to_jbyte_array(
                 env,
-                emptyVec,
+                emptyBytes
             );
         }
     }

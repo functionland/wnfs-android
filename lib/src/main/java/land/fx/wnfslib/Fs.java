@@ -109,12 +109,13 @@ public final class Fs {
     }
 
     @NonNull
-    public static String ls(Datastore datastore, String cid, String privateRef, String path) throws Exception {
+    public static byte[] ls(Datastore datastore, String cid, String privateRef, String path) throws Exception {
         try {
-            JSONArray output = new JSONArray();
-            Log.d("wnfs", "JSONArray is reached");
+            
+            Log.d("wnfs", "JSONArray is reached2");
             byte[] lsResult = lsNative(datastore, cid, privateRef, path);
-            Log.d("wnfs", "lsResult is reached");
+            Log.d("wnfs", "lsResult is reached: ");
+            /*JSONArray output = new JSONArray();
             byte[] rowSeparatorPattern = {33, 33, 33}; //!!!
             byte[] itemSeparatorPattern = {63, 63, 63}; //???
             List<byte[]> rows = split(rowSeparatorPattern, lsResult);
@@ -141,11 +142,9 @@ public final class Fs {
                     }
                 }
                 
-            }
+            }*/
 
-            String textOutput = output.toString();
-
-            return textOutput;
+            return lsResult;
         }
         catch(Exception e) {
             throw new Exception(e.getMessage());
