@@ -31,6 +31,8 @@ public final class Fs {
 
     private static native String readFileToPathNative(Datastore datastore, String cid, String privateRef, String path, String filename);
 
+    private static native String readFilestreamToPathNative(Datastore datastore, String cid, String privateRef, String path, String filename);
+    
     private static native byte[] readFileNative(Datastore datastore, String cid, String privateRef, String path);
 
     @NonNull
@@ -178,6 +180,21 @@ public final class Fs {
                 return res;
             } else {
                 throw new Exception("An Error Occured in Fs.readFileToPathNative Search logs for wnfsError to find out more.");
+            }
+        }
+        catch(Exception e) {
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    @NonNull
+    public static String readFilestreamToPath(Datastore datastore, String cid, String privateRef, String path, String filename) throws Exception {
+        try{
+            String res = readFilestreamToPathNative(datastore, cid, privateRef, path, filename);
+            if(res != null && !res.isEmpty()) {
+                return res;
+            } else {
+                throw new Exception("An Error Occured in Fs.readFilestreamToPathNative Search logs for wnfsError to find out more.");
             }
         }
         catch(Exception e) {

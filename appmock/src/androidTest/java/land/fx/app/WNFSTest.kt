@@ -131,6 +131,13 @@ class WNFSTest {
         assert(readcontent contentEquals "Hello, World!".toByteArray())
         Log.d("AppMock", "readFileFromPathOfReadTo. content="+String(readcontent))
 
+        val contentstreamfrompathtopath: String = readFilestreamToPath(client, config.cid, config.private_ref, "root/testfrompath.txt", pathString+"/teststream.txt")
+        Log.d("AppMock", "contentstreamfrompathtopath="+contentstreamfrompathtopath)
+        assertNotNull("contentstreamfrompathtopath should not be null", contentstreamfrompathtopath)
+        val readcontentstream: ByteArray = File(contentstreamfrompathtopath).readBytes()
+        assert(readcontentstream contentEquals "Hello, World!".toByteArray())
+        Log.d("AppMock", "readFileFromPathOfReadstreamTo. content="+String(readcontentstream))
+
         config = rm(client, config.cid, config.private_ref, "root/testfrompath.txt")
         val content2 = readFile(client, config.cid, config.private_ref, "root/testfrompath.txt")
         Log.d("AppMock", "rm. content="+String(content2))

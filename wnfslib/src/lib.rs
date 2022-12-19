@@ -258,6 +258,51 @@ pub mod android {
     }
 
     #[no_mangle]
+    pub extern "C" fn Java_land_fx_wnfslib_Fs_readFilestreamToPathNative(
+        env: JNIEnv,
+        _: JClass,
+        jni_fula_client: JObject,
+        jni_cid: JString,
+        jni_private_ref: JString,
+        jni_path_segments: JString,
+        jni_filename: JString,
+    ) -> jstring {
+        trace!("wnfs11 **********************readFilestreamToPathNative started**************");
+        let store = JNIStore::new(env, jni_fula_client);
+        let block_store = FFIFriendlyBlockStore::new(Box::new(store));
+        let helper = &mut PrivateDirectoryHelper::new(block_store);
+
+        let cid = deserialize_cid(env, jni_cid);
+        let private_ref = deserialize_private_ref(env, jni_private_ref);
+
+        let forest = helper.synced_load_forest(cid).unwrap();
+        let root_dir = helper
+            .synced_get_root_dir(forest.to_owned(), private_ref)
+            .unwrap();
+        let path_segments = prepare_path_segments(env, jni_path_segments);
+        let filename: String = env
+            .get_string(jni_filename)
+            .expect("Failed to parse input path segments")
+            .into();
+        trace!("wnfs11 **********************readFilestreamToPathNative filename created**************");
+        let result = helper.synced_read_filestream_to_path(&filename, forest.to_owned(), root_dir, &path_segments, 0);
+        trace!("wnfs11 **********************readFilestreamToPathNative finished**************");
+        if result.is_ok() {
+            let res = result.ok().unwrap();
+            env
+                .new_string(filename)
+                .expect("Failed to serialize result")
+                .into_inner()
+        } else {
+            trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_readFilestreamToPathNative on result: {:?}", result.err().unwrap());
+            env
+                .new_string("".to_string())
+                .expect("Failed to serialize result")
+                .into_inner()
+        }
+    }
+
+    #[no_mangle]
     pub extern "C" fn Java_land_fx_wnfslib_Fs_readFileToPathNative(
         env: JNIEnv,
         _: JClass,
@@ -370,10 +415,10 @@ pub mod android {
         trace!("**********************readFileNative finished**************");
         let result = helper.synced_read_file(forest.to_owned(), root_dir, &path_segments);
         if result.is_err() {
-            let emptyVec: Vec<u8> = Vec::new();
+            let empty_vec: Vec<u8> = Vec::new();
             return vec_to_jbyte_array(
                 env,
-                emptyVec,
+                empty_vec,
             );
         }
         vec_to_jbyte_array(
@@ -507,34 +552,34 @@ pub mod android {
                         );
                     } else {
                         trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative output: {:?}", output.err().unwrap().to_string());
-                        let emptyBytes: Vec<u8> = vec![0];
+                        let empty_bytes: Vec<u8> = vec![0];
                         return vec_to_jbyte_array(
                             env,
-                            emptyBytes
+                            empty_bytes
                         );
                     }
                 } else {
                     trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative ls_res: {:?}", ls_res.err().unwrap().to_string());
-                    let emptyBytes: Vec<u8> = vec![0];
+                    let empty_bytes: Vec<u8> = vec![0];
                     return vec_to_jbyte_array(
                         env,
-                        emptyBytes
+                        empty_bytes
                     );
                 }
             } else {
                 trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative root_dir_res: {:?}", root_dir_res.err().unwrap().to_string());
-                let emptyBytes: Vec<u8> = vec![0];
+                let empty_bytes: Vec<u8> = vec![0];
                 return vec_to_jbyte_array(
                     env,
-                    emptyBytes
+                    empty_bytes
                 );
             }
         } else {
             trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_lsNative forest_res: {:?}", forest_res.err().unwrap().to_string());
-            let emptyBytes: Vec<u8> = vec![0];
+            let empty_bytes: Vec<u8> = vec![0];
             return vec_to_jbyte_array(
                 env,
-                emptyBytes
+                empty_bytes
             );
         }
     }
