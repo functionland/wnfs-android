@@ -17,6 +17,7 @@ use wnfs::{
 use anyhow::Result;
 use log::{trace, Level};
 use sha3::Sha3_256;
+use futures::{Stream, StreamExt};
 
 
 use crate::blockstore::FFIFriendlyBlockStore;
@@ -347,6 +348,62 @@ impl<'a> PrivateDirectoryHelper<'a> {
             }
     }
 
+    pub async fn read_filestream_to_path(&mut self, local_filename: &String, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String], index: usize) -> Result<bool, String> {
+        //let mut stream_content: Vec<u8> = vec![];
+        let local_file = File::create(local_filename);
+        if local_file.is_ok() {
+            let mut local_file_handler = local_file.ok().unwrap();
+        
+            let private_node_result = root_dir.get_node(
+                path_segments
+                , true
+                , forest
+                , &mut self.store
+            ).await;
+            if private_node_result.is_ok() {
+                let PrivateOpResult {result, forest, ..} = private_node_result.ok().unwrap();
+                if result.is_some() {
+                    let private_node = result.unwrap();
+                    let is_file = private_node.is_file();
+                    if is_file {
+                        let file_res = private_node.as_file();
+                        if file_res.is_ok() {
+                            let file = file_res.ok().unwrap();
+                            let mut stream = file.stream_content(
+                                index
+                                , &forest
+                                , &mut self.store
+                            );
+                            while let Some(block) = stream.next().await {
+                                let write_result = local_file_handler.write_all(&block.unwrap());
+                                if write_result.is_err() {
+                                    trace!("wnfsError occured in read_filestream_to_path on write_result: {:?}", write_result.as_ref().err().unwrap().to_string());
+                                }
+                                //stream_content.extend_from_slice(&block.unwrap());
+                            }
+                            Ok(true)
+                        } else {
+                            trace!("wnfsError occured in read_filestream_to_path on file_res: {:?}", file_res.as_ref().err().unwrap().to_string());
+                            Err(file_res.err().unwrap().to_string())
+                        }
+                    } else {
+                        trace!("wnfsError occured in read_filestream_to_path on is_file");
+                        Err("wnfsError occured in read_filestream_to_path on is_file".to_string())
+                    }
+                } else {
+                    trace!("wnfsError occured in read_filestream_to_path on result");
+                    Err("wnfsError occured in read_filestream_to_path on result".to_string())
+                }
+            } else {
+                trace!("wnfsError occured in read_filestream_to_path on private_node_result: {:?}", private_node_result.as_ref().err().unwrap().to_string());
+                Err(private_node_result.err().unwrap().to_string())
+            }
+        } else {
+            trace!("wnfsError occured in read_filestream_to_path on local_file {:?}", local_file.as_ref().err().unwrap().to_string());
+            Err(local_file.err().unwrap().to_string())
+        }
+    }
+
     pub async fn read_file_to_path(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String], filename: &String) -> Result<String, String> {
         let file_content_res = self.read_file(forest, root_dir, path_segments).await;
         if file_content_res.is_ok() {
@@ -500,6 +557,12 @@ impl<'a> PrivateDirectoryHelper<'a> {
         let runtime =
             tokio::runtime::Runtime::new().expect("Unable to create a runtime");
         return runtime.block_on(self.read_file(forest, root_dir, path_segments));
+    }
+
+    pub fn synced_read_filestream_to_path(&mut self, local_filename: &String, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String], index: usize) -> Result<bool, String> {
+        let runtime =
+        tokio::runtime::Runtime::new().expect("Unable to create a runtime");
+        return runtime.block_on(self.read_filestream_to_path(local_filename, forest, root_dir, path_segments, index));
     }
 
     pub fn synced_mkdir(&mut self, forest: Rc<PrivateForest>, root_dir: Rc<PrivateDirectory>, path_segments: &[String]) -> Result<(Cid, PrivateRef), String>
