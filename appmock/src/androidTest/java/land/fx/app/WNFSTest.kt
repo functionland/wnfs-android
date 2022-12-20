@@ -112,7 +112,7 @@ class WNFSTest {
         }
  */       
 
-        config = writeFileFromPath(client, config.cid, config.private_ref, "root/testfrompath.txt", pathString+"/test.txt")
+        config = writeFileFromPath(client, config.cid, config.private_ref, "root/testfrompath.txt", pathString+"/test.txt") //target folder does not need to exist
         Log.d("AppMock", "config writeFile. cid="+config.cid+" & private_ref="+config.private_ref)
         assertNotNull("config should not be null", config)
         assertNotNull("cid should not be null", config.cid)
@@ -138,10 +138,25 @@ class WNFSTest {
         assert(readcontentstream contentEquals "Hello, World!".toByteArray())
         Log.d("AppMock", "readFileFromPathOfReadstreamTo. content="+String(readcontentstream))
 
-        config = rm(client, config.cid, config.private_ref, "root/testfrompath.txt")
-        val content2 = readFile(client, config.cid, config.private_ref, "root/testfrompath.txt")
+        config = cp(client, config.cid, config.private_ref, "root/testfrompath.txt", "root/testfrompathcp.txt") //target folder must exists
+        val content_cp = readFile(client, config.cid, config.private_ref, "root/testfrompathcp.txt")
+        Log.d("AppMock", "cp. content_cp="+String(content_cp))
+        assert(content_cp contentEquals "Hello, World!".toByteArray())
+
+        config = mv(client, config.cid, config.private_ref, "root/testfrompath.txt", "root/testfrompathmv.txt") //target folder must exists
+        val content_mv = readFile(client, config.cid, config.private_ref, "root/testfrompathmv.txt")
+        Log.d("AppMock", "mv. content_mv="+String(content_mv))
+        assert(content_mv contentEquals "Hello, World!".toByteArray())
+
+        config = rm(client, config.cid, config.private_ref, "root/testfrompathmv.txt")
+        val content2 = readFile(client, config.cid, config.private_ref, "root/testfrompathmv.txt")
         Log.d("AppMock", "rm. content="+String(content2))
         assert(content2 contentEquals "".toByteArray())
+
+        config = rm(client, config.cid, config.private_ref, "root/testfrompathcp.txt")
+        val content3 = readFile(client, config.cid, config.private_ref, "root/testfrompathcp.txt")
+        Log.d("AppMock", "rm. content="+String(content3))
+        assert(content3 contentEquals "".toByteArray())
 
 
         config = writeFile(client, config.cid, config.private_ref, "root/test.txt", "Hello, World!".toByteArray())

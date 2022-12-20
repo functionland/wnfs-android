@@ -7,6 +7,8 @@ Webnative Filesystem(WNFS) wrapper for Android.
 
 ## Usage
 
+Exposed endpoint: mkdir, writeFile, writeFileFromPath, readFile, readFileToPath, readFilestreamToPath, rm, cp, mv
+
 - Library is already packaged and published on Jitpack and ready to be used in Android applications (Java, Kotlin). Please checkout the AppMock for all usage examples: https://github.com/functionland/wnfs-android/blob/main/appmock/src/androidTest/java/land/fx/app/WNFSTest.kt
 
 - .aar files are available here that can be imported in ny framework: https://github.com/functionland/wnfs-build-aar
@@ -73,5 +75,5 @@ Please note the following might not be done in order:
 - [x] Add WNFS tree encryption key generation from an input (deterministically)
 - [x] add error catching
 - [x] add metadata to ls and make it array
-- [ ] Improve ls, read, and write functions to use a stream. ( :100: v1.0.0 Release here )
+- [x] Improve read function to use a stream. ( :100: v1 Release here )
 - [ ] remove dependancy to custom version of wnfs

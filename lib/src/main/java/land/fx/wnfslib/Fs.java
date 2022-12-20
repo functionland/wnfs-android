@@ -29,6 +29,10 @@ public final class Fs {
 
     private static native Config rmNative(Datastore datastore, String cid, String privateRef, String path);
 
+    private static native Config mvNative(Datastore datastore, String cid, String privateRef, String sourcePath, String targetPath);
+
+    private static native Config cpNative(Datastore datastore, String cid, String privateRef, String sourcePath, String targetPath);
+
     private static native String readFileToPathNative(Datastore datastore, String cid, String privateRef, String path, String filename);
 
     private static native String readFilestreamToPathNative(Datastore datastore, String cid, String privateRef, String path, String filename);
@@ -168,8 +172,19 @@ public final class Fs {
         }
     }
 
+    @NonNull
     public static Config rm(Datastore datastore, String cid, String privateRef, String path) {
         return rmNative(datastore, cid, privateRef, path);
+    }
+
+    @NonNull
+    public static Config mv(Datastore datastore, String cid, String privateRef, String sourcePath, String targetPath) {
+        return mvNative(datastore, cid, privateRef, sourcePath, targetPath);
+    }
+
+    @NonNull
+    public static Config cp(Datastore datastore, String cid, String privateRef, String sourcePath, String targetPath) {
+        return cpNative(datastore, cid, privateRef, sourcePath, targetPath);
     }
 
     @NonNull

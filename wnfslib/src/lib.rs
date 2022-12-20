@@ -373,7 +373,7 @@ pub mod android {
         let content = jbyte_array_to_vec(env, jni_content);
         //let (cid, private_ref) =
         let write_file_res = 
-            helper.synced_write_file(forest.to_owned(), root_dir, &path_segments, content);
+            helper.synced_write_file(forest.to_owned(), root_dir, &path_segments, content, 0);
         trace!("**********************writeFileNative finished**************");
         if write_file_res.is_ok() {
             let (cid, private_ref) = write_file_res.ok().unwrap();
@@ -478,6 +478,78 @@ pub mod android {
             trace!("wnfsError in Java_land_fx_wnfslib_Fs_mkdirNative: {:?}", msg);
             return JObject::null().into_inner();
         }
+    }
+
+    #[no_mangle]
+    pub extern "C" fn Java_land_fx_wnfslib_Fs_mvNative(
+        env: JNIEnv,
+        _: JClass,
+        jni_fula_client: JObject,
+        jni_cid: JString,
+        jni_private_ref: JString,
+        jni_source_path_segments: JString,
+        jni_target_path_segments: JString,
+    ) -> jobject {
+        trace!("**********************mvNative started**************");
+        let store = JNIStore::new(env, jni_fula_client);
+        let block_store = FFIFriendlyBlockStore::new(Box::new(store));
+        let helper = &mut PrivateDirectoryHelper::new(block_store);
+
+        let cid = deserialize_cid(env, jni_cid);
+        let private_ref = deserialize_private_ref(env, jni_private_ref);
+
+        let forest = helper.synced_load_forest(cid).unwrap();
+        let root_dir = helper
+            .synced_get_root_dir(forest.to_owned(), private_ref)
+            .unwrap();
+        let source_path_segments = prepare_path_segments(env, jni_source_path_segments);
+        let target_path_segments = prepare_path_segments(env, jni_target_path_segments);
+        let result = helper.synced_mv(forest.to_owned(), root_dir, &source_path_segments, &target_path_segments);
+        trace!("**********************mvNative finished**************");
+        if result.is_ok() {
+            let (cid, private_ref) = result.ok().unwrap();
+            return serialize_config(env, cid, private_ref);
+        }else {
+            trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_mvNative: {:?}", result.err().unwrap());
+            return JObject::null().into_inner();
+        }
+        
+    }
+
+    #[no_mangle]
+    pub extern "C" fn Java_land_fx_wnfslib_Fs_cpNative(
+        env: JNIEnv,
+        _: JClass,
+        jni_fula_client: JObject,
+        jni_cid: JString,
+        jni_private_ref: JString,
+        jni_source_path_segments: JString,
+        jni_target_path_segments: JString,
+    ) -> jobject {
+        trace!("**********************cpNative started**************");
+        let store = JNIStore::new(env, jni_fula_client);
+        let block_store = FFIFriendlyBlockStore::new(Box::new(store));
+        let helper = &mut PrivateDirectoryHelper::new(block_store);
+
+        let cid = deserialize_cid(env, jni_cid);
+        let private_ref = deserialize_private_ref(env, jni_private_ref);
+
+        let forest = helper.synced_load_forest(cid).unwrap();
+        let root_dir = helper
+            .synced_get_root_dir(forest.to_owned(), private_ref)
+            .unwrap();
+        let source_path_segments = prepare_path_segments(env, jni_source_path_segments);
+        let target_path_segments = prepare_path_segments(env, jni_target_path_segments);
+        let result = helper.synced_cp(forest.to_owned(), root_dir, &source_path_segments, &target_path_segments);
+        trace!("**********************mvNative finished**************");
+        if result.is_ok() {
+            let (cid, private_ref) = result.ok().unwrap();
+            return serialize_config(env, cid, private_ref);
+        }else {
+            trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_cpNative: {:?}", result.err().unwrap());
+            return JObject::null().into_inner();
+        }
+        
     }
 
     #[no_mangle]
