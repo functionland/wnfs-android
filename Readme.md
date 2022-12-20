@@ -75,5 +75,5 @@ Please note the following might not be done in order:
 - [x] Add WNFS tree encryption key generation from an input (deterministically)
 - [x] add error catching
 - [x] add metadata to ls and make it array
-- [x] Improve read function to use a stream. ( :100: v1.0.0 Release here )
+- [x] Improve read function to use a stream. ( :100: v1 Release here )
 - [ ] remove dependancy to custom version of wnfs
