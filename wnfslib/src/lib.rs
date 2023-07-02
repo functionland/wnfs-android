@@ -5,18 +5,14 @@
 pub mod android {
     extern crate jni;
 
-    use std::collections::hash_map;
-
-    use jni::objects::{JClass, JObject, JString, JValue, JMap, JList};
+    use jni::objects::{JClass, JObject, JString, JValue};
     use jni::signature::JavaType;
-    use jni::sys::{jbyteArray, jobject, jstring, jcharArray, jsize};
+    use jni::sys::{jbyteArray, jobject, jstring};
     use jni::JNIEnv;
     use libipld::Cid;
-    use libipld::cbor::cbor::NULL;
+    use wnfs::private::AccessKey;
+    use wnfs::common::Metadata;
     use log::{trace, Level};
-    use wnfs::private::PrivateRef;
-    use wnfs::Metadata;
-    use wnfsutils::kvstore::KVBlockStore;
     extern crate android_logger;
     use android_logger::Config;
     use anyhow::Result;
@@ -46,34 +42,33 @@ pub mod android {
                 .unwrap();
 
             let cid_jbyte_array = vec_to_jbyte_array(self.env, cid);
-            let data_jbyte_array = self
-                .env
-                .call_method_unchecked(
-                    self.fula_client,
-                    get_fn,
-                    JavaType::Object(String::from("[B")),
-                    &[JValue::from(cid_jbyte_array)],
-                )
-                .unwrap()
-                .l()
-                .unwrap();
+            unsafe{
+                let data_jbyte_array = self
+                    .env
+                    .call_method_unchecked(
+                        self.fula_client,
+                        get_fn,
+                        JavaType::Object(String::from("[B")),
+                        &[JValue::from(cid_jbyte_array)],
+                    )
+                    .unwrap()
+                    .l()
+                    .unwrap();
 
-            let data = jbyte_array_to_vec(self.env, data_jbyte_array.into_inner());
-            trace!("**********************get_block finished**************");
-            Ok(data)
+                let data = jbyte_array_to_vec(self.env, data_jbyte_array.into_inner());
+                trace!("**********************get_block finished**************");
+                Ok(data)
+            }
         }
 
         /// Stores an array of bytes in the block store.
-        fn put_block(&self, bytes: Vec<u8>, codec: i64) -> Result<Vec<u8>> {
+        fn put_block(&self, cid: Vec<u8>, bytes: Vec<u8>) -> Result<()> {
             trace!("**********************put_block started**************");
-            trace!(
-                "**********************put_block coded={}",
-                codec.to_string()
-            );
+            trace!("**********************put_block cid={:?}", &cid);
             trace!("**********************put_block bytes={:?}", &bytes);
             let put_fn = self
                 .env
-                .get_method_id(self.fula_client, "put", "([BJ)[B")
+                .get_method_id(self.fula_client, "put", "([B[B)[B")
                 .unwrap();
             trace!("**********************put_block put_fn done**************");
             let data_jbyte_array = vec_to_jbyte_array(self.env, bytes);
@@ -82,31 +77,35 @@ pub mod android {
                 "**********************put_block LVALUE_data_jbyte_array={:?}",
                 &JValue::from(data_jbyte_array)
             );
-            trace!(
-                "**********************put_block JVALUE_codec={:?}",
-                &JValue::from(codec)
-            );
-            let cid_jbyte_array = self
-                .env
-                .call_method_unchecked(
-                    self.fula_client,
-                    put_fn,
-                    JavaType::Object(String::from("[B")),
-                    &[JValue::from(data_jbyte_array), JValue::from(codec)],
-                )
-                .unwrap_or_else(|_err: jni::errors::Error| {
-                    trace!("**********************put_block first unwrap error**************");
-                    panic!("HERE1: {}", _err)
-                })
-                .l()
-                .unwrap_or_else(|_err: jni::errors::Error| {
-                    trace!("**********************put_block second unwrap error**************");
-                    panic!("HERE2: {}", _err)
-                });
+            let cid_jbyte_array = vec_to_jbyte_array(self.env, cid);
             trace!("**********************put_block cid_jbyte_array done**************");
-            let cid = jbyte_array_to_vec(self.env, cid_jbyte_array.into_inner());
-            trace!("**********************put_block finished**************");
-            Ok(cid)
+            trace!(
+                "**********************put_block LVALUE_cid_jbyte_array={:?}",
+                &JValue::from(cid_jbyte_array)
+            );
+            unsafe{
+                let cid_jbyte_array = self
+                    .env
+                    .call_method_unchecked(
+                        self.fula_client,
+                        put_fn,
+                        JavaType::Object(String::from("[B")),
+                        &[JValue::from(cid_jbyte_array), JValue::from(data_jbyte_array)],
+                    )
+                    .unwrap_or_else(|_err: jni::errors::Error| {
+                        trace!("**********************put_block first unwrap error**************");
+                        panic!("HERE1: {}", _err)
+                    })
+                    .l()
+                    .unwrap_or_else(|_err: jni::errors::Error| {
+                        trace!("**********************put_block second unwrap error**************");
+                        panic!("HERE2: {}", _err)
+                    });
+                trace!("**********************put_block cid_jbyte_array done**************");
+                let _ = jbyte_array_to_vec(self.env, cid_jbyte_array.into_inner());
+                trace!("**********************put_block finished**************");
+                Ok(())
+            }
         }
     }
 
@@ -138,23 +137,27 @@ pub mod android {
     }
 
     #[no_mangle]
-    pub extern "C" fn Java_land_fx_wnfslib_Fs_getPrivateRefNative(
+    pub extern "C" fn Java_land_fx_wnfslib_Fs_getAccessKeyNative(
         env: JNIEnv,
         _: JClass,
         jni_fula_client: JObject,
         jni_wnfs_key: jbyteArray,
         jni_cid: JString,
     ) -> jstring {
-        trace!("**********************getPrivateRefNative started**************");
+        trace!("**********************getAccessKeyNative started**************");
         let store = JNIStore::new(env, jni_fula_client);
         let block_store = FFIFriendlyBlockStore::new(Box::new(store));
         let helper = &mut PrivateDirectoryHelper::new(block_store);
         let wnfs_key: Vec<u8> = jbyte_array_to_vec(env, jni_wnfs_key);
         let forest_cid = deserialize_cid(env, jni_cid);
-        let private_ref = helper.synced_get_private_ref(wnfs_key, forest_cid);
-        trace!("**********************getPrivateRefNative finished**************");
-        if private_ref.is_ok() {
-            return serialize_private_ref(env, private_ref.ok().unwrap()).into_inner();
+        let forest_res = &mut helper.synced_load_forest(forest_cid);
+        if forest_res.is_ok() {
+            let forest = &mut forest_res.ok().unwrap();
+        }
+        let access_key = helper.synced_get_access_key(wnfs_key, forest_cid);
+        trace!("**********************getAccessKeyNative finished**************");
+        if access_key.is_ok() {
+            return serialize_access_key(env, access_key.ok().unwrap()).into_inner();
         } else {
             env
             .new_string("")
@@ -177,23 +180,25 @@ pub mod android {
         let helper = &mut PrivateDirectoryHelper::new(block_store);
         let forest_cid = deserialize_cid(env, jni_cid);
         trace!("cid: {}", forest_cid);
-        let forest_res = helper.synced_load_forest(forest_cid);
+        let forest_res = &mut helper.synced_load_forest(forest_cid);
         if forest_res.is_ok() {
-            let forest = forest_res.ok().unwrap();
+            let forest = &mut forest_res.ok().unwrap();
             let wnfs_key: Vec<u8> = jbyte_array_to_vec(env, jni_wnfs_key);
             let init_res = helper.synced_init(forest, wnfs_key);
             if init_res.is_ok() {
-                let (cid, private_ref) = init_res.ok().unwrap();
-                trace!("pref: {:?}", private_ref);
+                let (cid, access_key) = init_res.ok().unwrap();
+                trace!("pref: {:?}", access_key);
                 trace!("**********************createRootDirNative finished**************");
-                serialize_config(env, cid, private_ref)
+                unsafe{
+                    return serialize_config(env, cid, access_key)
+                }
             } else {
                 let msg = init_res.err().unwrap();
                 trace!("wnfsError in Java_land_fx_wnfslib_Fs_createRootDirNative: {:?}", msg);
                 return JObject::null().into_inner();
             }
         } else {
-            let msg = forest_res.err().unwrap();
+            let msg = &mut forest_res.err().unwrap();
             trace!("wnfsError in Java_land_fx_wnfslib_Fs_createRootDirNative: {:?}", msg);
             return JObject::null().into_inner();
         }
@@ -205,7 +210,7 @@ pub mod android {
         _: JClass,
         jni_fula_client: JObject,
         jni_cid: JString,
-        jni_private_ref: JString,
+        jni_access_key: JString,
         jni_path_segments: JString,
         jni_filename: JString,
     ) -> jobject {
@@ -215,17 +220,17 @@ pub mod android {
         let helper = &mut PrivateDirectoryHelper::new(block_store);
 
         let cid = deserialize_cid(env, jni_cid);
-        let private_ref = deserialize_private_ref(env, jni_private_ref);
-        let old_private_ref = private_ref.to_owned();
+        let access_key = deserialize_access_key(env, jni_access_key);
+        let old_access_key = access_key.to_owned();
         let old_cid = cid.to_owned();
 
-        let forest_res = helper.synced_load_forest(cid);
+        let forest_res = &mut helper.synced_load_forest(cid);
         if forest_res.is_ok() {
-            let forest = forest_res.ok().unwrap();
+            let forest = &mut forest_res.ok().unwrap();
             let root_dir_res = helper
-                .synced_get_root_dir(forest.to_owned(), private_ref);
+                .synced_get_root_dir(forest, access_key);
             if root_dir_res.is_ok() {
-                let root_dir = root_dir_res.ok().unwrap();
+                let root_dir = &mut root_dir_res.ok().unwrap();
                 let path_segments = prepare_path_segments(env, jni_path_segments);
 
                 let filename: String = env
@@ -234,11 +239,13 @@ pub mod android {
                     .into();
 
                 let write_file_result = 
-                    helper.synced_write_file_from_path(forest.to_owned(), root_dir, &path_segments, &filename);
+                    helper.synced_write_file_from_path(forest, root_dir, &path_segments, &filename);
                     trace!("**********************writeFileFromPathNative finished**************");
                 if write_file_result.is_ok() {
-                    let (cid, private_ref) = write_file_result.ok().unwrap();
-                    return serialize_config(env, cid, private_ref);
+                    let (cid, access_key) = write_file_result.ok().unwrap();
+                    unsafe{
+                        return serialize_config(env, cid, access_key);
+                    }
                 } else {
                     let msg = write_file_result.err().unwrap();
                     trace!("wnfsError in Java_land_fx_wnfslib_Fs_writeFileFromPathNative: {:?}", msg);
@@ -250,7 +257,7 @@ pub mod android {
                 return JObject::null().into_inner();
             }
         } else {
-            let msg = forest_res.err().unwrap();
+            let msg = &mut forest_res.err().unwrap();
             trace!("wnfsError in Java_land_fx_wnfslib_Fs_writeFileFromPathNative: {:?}", msg);
             return JObject::null().into_inner();
         }
@@ -263,7 +270,7 @@ pub mod android {
         _: JClass,
         jni_fula_client: JObject,
         jni_cid: JString,
-        jni_private_ref: JString,
+        jni_access_key: JString,
         jni_path_segments: JString,
         jni_filename: JString,
     ) -> jstring {
@@ -273,11 +280,11 @@ pub mod android {
         let helper = &mut PrivateDirectoryHelper::new(block_store);
 
         let cid = deserialize_cid(env, jni_cid);
-        let private_ref = deserialize_private_ref(env, jni_private_ref);
+        let access_key = deserialize_access_key(env, jni_access_key);
 
-        let forest = helper.synced_load_forest(cid).unwrap();
-        let root_dir = helper
-            .synced_get_root_dir(forest.to_owned(), private_ref)
+        let forest = &mut helper.synced_load_forest(cid).unwrap();
+        let root_dir = &mut helper
+            .synced_get_root_dir(forest, access_key)
             .unwrap();
         let path_segments = prepare_path_segments(env, jni_path_segments);
         let filename: String = env
@@ -285,7 +292,7 @@ pub mod android {
             .expect("Failed to parse input path segments")
             .into();
         trace!("wnfs11 **********************readFilestreamToPathNative filename created**************");
-        let result = helper.synced_read_filestream_to_path(&filename, forest.to_owned(), root_dir, &path_segments, 0);
+        let result = helper.synced_read_filestream_to_path(&filename, forest, root_dir, &path_segments, 0);
         trace!("wnfs11 **********************readFilestreamToPathNative finished**************");
         if result.is_ok() {
             let res = result.ok().unwrap();
@@ -308,7 +315,7 @@ pub mod android {
         _: JClass,
         jni_fula_client: JObject,
         jni_cid: JString,
-        jni_private_ref: JString,
+        jni_access_key: JString,
         jni_path_segments: JString,
         jni_filename: JString,
     ) -> jstring {
@@ -318,11 +325,11 @@ pub mod android {
         let helper = &mut PrivateDirectoryHelper::new(block_store);
 
         let cid = deserialize_cid(env, jni_cid);
-        let private_ref = deserialize_private_ref(env, jni_private_ref);
+        let access_key = deserialize_access_key(env, jni_access_key);
 
-        let forest = helper.synced_load_forest(cid).unwrap();
-        let root_dir = helper
-            .synced_get_root_dir(forest.to_owned(), private_ref)
+        let forest = &mut helper.synced_load_forest(cid).unwrap();
+        let root_dir = &mut helper
+            .synced_get_root_dir(forest, access_key)
             .unwrap();
         let path_segments = prepare_path_segments(env, jni_path_segments);
         let filename: String = env
@@ -330,7 +337,7 @@ pub mod android {
             .expect("Failed to parse input path segments")
             .into();
         trace!("wnfs11 **********************readFileToPathNative filename created**************");
-        let result = helper.synced_read_file_to_path(forest.to_owned(), root_dir, &path_segments, &filename);
+        let result = helper.synced_read_file_to_path(forest, root_dir, &path_segments, &filename);
         trace!("wnfs11 **********************readFileToPathNative finished**************");
         if result.is_ok() {
             let res = result.ok().unwrap();
@@ -353,7 +360,7 @@ pub mod android {
         _: JClass,
         jni_fula_client: JObject,
         jni_cid: JString,
-        jni_private_ref: JString,
+        jni_access_key: JString,
         jni_path_segments: JString,
         jni_content: jbyteArray,
     ) -> jobject {
@@ -363,22 +370,24 @@ pub mod android {
         let helper = &mut PrivateDirectoryHelper::new(block_store);
 
         let cid = deserialize_cid(env, jni_cid);
-        let private_ref = deserialize_private_ref(env, jni_private_ref);
+        let access_key = deserialize_access_key(env, jni_access_key);
 
-        let forest = helper.synced_load_forest(cid).unwrap();
-        let root_dir = helper
-            .synced_get_root_dir(forest.to_owned(), private_ref)
+        let forest = &mut helper.synced_load_forest(cid).unwrap();
+        let root_dir = &mut helper
+            .synced_get_root_dir(forest, access_key)
             .unwrap();
         let path_segments = prepare_path_segments(env, jni_path_segments);
         let content = jbyte_array_to_vec(env, jni_content);
-        //let (cid, private_ref) =
+        //let (cid, access_key) =
         let write_file_res = 
-            helper.synced_write_file(forest.to_owned(), root_dir, &path_segments, content, 0);
+            helper.synced_write_file(forest, root_dir, &path_segments, content, 0);
         trace!("**********************writeFileNative finished**************");
         if write_file_res.is_ok() {
-            let (cid, private_ref) = write_file_res.ok().unwrap();
-            let config: jobject = serialize_config(env, cid, private_ref);
-            return config;
+            let (cid, access_key) = write_file_res.ok().unwrap();
+            unsafe{
+                let config: jobject = serialize_config(env, cid, access_key);
+                return config;
+            }
         } else {
             let msg = write_file_res
                 .err()
@@ -396,7 +405,7 @@ pub mod android {
         _: JClass,
         jni_fula_client: JObject,
         jni_cid: JString,
-        jni_private_ref: JString,
+        jni_access_key: JString,
         jni_path_segments: JString,
     ) -> jbyteArray {
         trace!("**********************readFileNative started**************");
@@ -405,15 +414,15 @@ pub mod android {
         let helper = &mut PrivateDirectoryHelper::new(block_store);
 
         let cid = deserialize_cid(env, jni_cid);
-        let private_ref = deserialize_private_ref(env, jni_private_ref);
+        let access_key = deserialize_access_key(env, jni_access_key);
 
-        let forest = helper.synced_load_forest(cid).unwrap();
-        let root_dir = helper
-            .synced_get_root_dir(forest.to_owned(), private_ref)
+        let forest = &mut helper.synced_load_forest(cid).unwrap();
+        let root_dir = &mut helper
+            .synced_get_root_dir(forest, access_key)
             .unwrap();
         let path_segments = prepare_path_segments(env, jni_path_segments);
         trace!("**********************readFileNative finished**************");
-        let result = helper.synced_read_file(forest.to_owned(), root_dir, &path_segments);
+        let result = helper.synced_read_file(forest, root_dir, &path_segments);
         if result.is_err() {
             let empty_vec: Vec<u8> = Vec::new();
             return vec_to_jbyte_array(
@@ -433,7 +442,7 @@ pub mod android {
         _: JClass,
         jni_fula_client: JObject,
         jni_cid: JString,
-        jni_private_ref: JString,
+        jni_access_key: JString,
         jni_path_segments: JString,
     ) -> jobject {
         trace!("**********************mkDirNative started**************");
@@ -442,21 +451,21 @@ pub mod android {
         let helper = &mut PrivateDirectoryHelper::new(block_store);
 
         let cid = deserialize_cid(env, jni_cid);
-        let private_ref = deserialize_private_ref(env, jni_private_ref);
+        let access_key = deserialize_access_key(env, jni_access_key);
 
-        let forest_res = helper.synced_load_forest(cid);
+        let forest_res = &mut helper.synced_load_forest(cid);
         if forest_res.is_ok() {
-            let forest = forest_res.ok().unwrap();
+            let forest = &mut forest_res.ok().unwrap();
             let root_dir_res = helper
-                .synced_get_root_dir(forest.to_owned(), private_ref);
+                .synced_get_root_dir(forest, access_key);
                 if root_dir_res.is_ok() {
-                    let root_dir = root_dir_res.ok().unwrap();
+                    let root_dir = &mut root_dir_res.ok().unwrap();
                     let path_segments = prepare_path_segments(env, jni_path_segments);
-                    let mkdir_res = helper.synced_mkdir(forest.to_owned(), root_dir, &path_segments);
+                    let mkdir_res = helper.synced_mkdir(forest,root_dir, &path_segments);
                     if mkdir_res.is_ok() {
-                        let (cid, private_ref) = mkdir_res.ok().unwrap();
+                        let (cid, access_key) = mkdir_res.ok().unwrap();
                         trace!("**********************mkDirNative finished**************");
-                        serialize_config(env, cid, private_ref)
+                        unsafe{return serialize_config(env, cid, access_key)}
                     } else {
                         let msg = mkdir_res
                             .err()
@@ -472,7 +481,7 @@ pub mod android {
                     return JObject::null().into_inner();
                 }
         } else {
-            let msg = forest_res
+            let msg = &mut forest_res
                 .err()
                 .unwrap();
             trace!("wnfsError in Java_land_fx_wnfslib_Fs_mkdirNative: {:?}", msg);
@@ -486,7 +495,7 @@ pub mod android {
         _: JClass,
         jni_fula_client: JObject,
         jni_cid: JString,
-        jni_private_ref: JString,
+        jni_access_key: JString,
         jni_source_path_segments: JString,
         jni_target_path_segments: JString,
     ) -> jobject {
@@ -496,19 +505,21 @@ pub mod android {
         let helper = &mut PrivateDirectoryHelper::new(block_store);
 
         let cid = deserialize_cid(env, jni_cid);
-        let private_ref = deserialize_private_ref(env, jni_private_ref);
+        let access_key = deserialize_access_key(env, jni_access_key);
 
-        let forest = helper.synced_load_forest(cid).unwrap();
-        let root_dir = helper
-            .synced_get_root_dir(forest.to_owned(), private_ref)
+        let forest = &mut helper.synced_load_forest(cid).unwrap();
+        let root_dir = &mut helper
+            .synced_get_root_dir(forest, access_key)
             .unwrap();
         let source_path_segments = prepare_path_segments(env, jni_source_path_segments);
         let target_path_segments = prepare_path_segments(env, jni_target_path_segments);
-        let result = helper.synced_mv(forest.to_owned(), root_dir, &source_path_segments, &target_path_segments);
+        let result = helper.synced_mv(forest, root_dir, &source_path_segments, &target_path_segments);
         trace!("**********************mvNative finished**************");
         if result.is_ok() {
-            let (cid, private_ref) = result.ok().unwrap();
-            return serialize_config(env, cid, private_ref);
+            let (cid, access_key) = result.ok().unwrap();
+            unsafe{
+                return serialize_config(env, cid, access_key);
+            }
         }else {
             trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_mvNative: {:?}", result.err().unwrap());
             return JObject::null().into_inner();
@@ -522,7 +533,7 @@ pub mod android {
         _: JClass,
         jni_fula_client: JObject,
         jni_cid: JString,
-        jni_private_ref: JString,
+        jni_access_key: JString,
         jni_source_path_segments: JString,
         jni_target_path_segments: JString,
     ) -> jobject {
@@ -532,19 +543,21 @@ pub mod android {
         let helper = &mut PrivateDirectoryHelper::new(block_store);
 
         let cid = deserialize_cid(env, jni_cid);
-        let private_ref = deserialize_private_ref(env, jni_private_ref);
+        let access_key = deserialize_access_key(env, jni_access_key);
 
-        let forest = helper.synced_load_forest(cid).unwrap();
-        let root_dir = helper
-            .synced_get_root_dir(forest.to_owned(), private_ref)
+        let forest = &mut helper.synced_load_forest(cid).unwrap();
+        let root_dir = &mut helper
+            .synced_get_root_dir(forest, access_key)
             .unwrap();
         let source_path_segments = prepare_path_segments(env, jni_source_path_segments);
         let target_path_segments = prepare_path_segments(env, jni_target_path_segments);
-        let result = helper.synced_cp(forest.to_owned(), root_dir, &source_path_segments, &target_path_segments);
+        let result = helper.synced_cp(forest, root_dir, &source_path_segments, &target_path_segments);
         trace!("**********************mvNative finished**************");
         if result.is_ok() {
-            let (cid, private_ref) = result.ok().unwrap();
-            return serialize_config(env, cid, private_ref);
+            let (cid, access_key) = result.ok().unwrap();
+            unsafe{
+                return serialize_config(env, cid, access_key);
+            }
         }else {
             trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_cpNative: {:?}", result.err().unwrap());
             return JObject::null().into_inner();
@@ -558,7 +571,7 @@ pub mod android {
         _: JClass,
         jni_fula_client: JObject,
         jni_cid: JString,
-        jni_private_ref: JString,
+        jni_access_key: JString,
         jni_path_segments: JString,
     ) -> jobject {
         trace!("**********************rmNative started**************");
@@ -567,18 +580,20 @@ pub mod android {
         let helper = &mut PrivateDirectoryHelper::new(block_store);
 
         let cid = deserialize_cid(env, jni_cid);
-        let private_ref = deserialize_private_ref(env, jni_private_ref);
+        let access_key = deserialize_access_key(env, jni_access_key);
 
-        let forest = helper.synced_load_forest(cid).unwrap();
-        let root_dir = helper
-            .synced_get_root_dir(forest.to_owned(), private_ref)
+        let forest = &mut helper.synced_load_forest(cid).unwrap();
+        let root_dir = &mut helper
+            .synced_get_root_dir(forest, access_key)
             .unwrap();
         let path_segments = prepare_path_segments(env, jni_path_segments);
-        let result = helper.synced_rm(forest.to_owned(), root_dir, &path_segments);
+        let result = helper.synced_rm(forest, root_dir, &path_segments);
         trace!("**********************rmNative finished**************");
         if result.is_ok() {
-            let (cid, private_ref) = result.ok().unwrap();
-            return serialize_config(env, cid, private_ref);
+            let (cid, access_key) = result.ok().unwrap();
+            unsafe{
+                return serialize_config(env, cid, access_key);
+            }
         }else {
             trace!("wnfsError occured in Java_land_fx_wnfslib_Fs_rmNative: {:?}", result.err().unwrap());
             return JObject::null().into_inner();
@@ -592,7 +607,7 @@ pub mod android {
         _: JClass,
         jni_fula_client: JObject,
         jni_cid: JString,
-        jni_private_ref: JString,
+        jni_access_key: JString,
         jni_path_segments: JString,
     ) -> jbyteArray {
         trace!("**********************lsNative started**************");
@@ -601,17 +616,17 @@ pub mod android {
         let helper = &mut PrivateDirectoryHelper::new(block_store);
 
         let cid = deserialize_cid(env, jni_cid);
-        let private_ref = deserialize_private_ref(env, jni_private_ref);
+        let access_key = deserialize_access_key(env, jni_access_key);
 
-        let forest_res = helper.synced_load_forest(cid);
+        let forest_res = &mut helper.synced_load_forest(cid);
         if forest_res.is_ok() {
-            let forest = forest_res.ok().unwrap();
+            let forest = &mut forest_res.ok().unwrap();
             let root_dir_res = helper
-                .synced_get_root_dir(forest.to_owned(), private_ref);
+                .synced_get_root_dir(forest, access_key);
             if root_dir_res.is_ok() {
-                let root_dir = root_dir_res.ok().unwrap();
+                let root_dir = &mut root_dir_res.ok().unwrap();
                 let path_segments = prepare_path_segments(env, jni_path_segments);
-                let ls_res = helper.synced_ls_files(forest.to_owned(), root_dir, &path_segments);
+                let ls_res = helper.synced_ls_files(forest, root_dir, &path_segments);
                 if ls_res.is_ok() {
                     let output =
                         prepare_ls_output(env, ls_res.ok().unwrap());
@@ -656,7 +671,7 @@ pub mod android {
         }
     }
 
-    pub fn serialize_config(env: JNIEnv, cid: Cid, private_ref: PrivateRef) -> jobject {
+    pub unsafe fn serialize_config(env: JNIEnv, cid: Cid, access_key: AccessKey) -> jobject {
         trace!("**********************serialize_config started**************");
         let config_cls = env.find_class("land/fx/wnfslib/Config").unwrap();
         //let  handler_class = reinterpret_cast<jclass>(env.new_global_ref(config_cls));
@@ -672,14 +687,14 @@ pub mod android {
 
             trace!("**********************serialize_config create_config_fn set**************");
             let cid = serialize_cid(env, cid);
-            let private_ref = serialize_private_ref(env, private_ref);
+            let access_key = serialize_access_key(env, access_key);
             trace!("**********************serialize_config almost finished**************");
             let config_res = env
                 .call_static_method_unchecked(
                     config_cls,
                     create_config_fn,
                     JavaType::Object(String::from("land/fx/wnfslib/Config")),
-                    &[JValue::from(cid), JValue::from(private_ref)],
+                    &[JValue::from(cid), JValue::from(access_key)],
                 );
             if config_res.is_ok() {
                 let config_l = config_res
@@ -729,18 +744,18 @@ pub mod android {
         a
     }
 
-    pub fn serialize_private_ref(env: JNIEnv, private_ref: PrivateRef) -> JString {
-        env.new_string(serde_json::to_string(&private_ref).unwrap())
+    pub fn serialize_access_key(env: JNIEnv, access_key: AccessKey) -> JString {
+        env.new_string(serde_json::to_string(&access_key).unwrap())
             .expect("Failed to create private ref string")
             .into()
     }
 
-    pub fn deserialize_private_ref(env: JNIEnv, jni_private_ref: JString) -> PrivateRef {
-        let private_ref: String = env
-            .get_string(jni_private_ref)
+    pub fn deserialize_access_key(env: JNIEnv, jni_access_key: JString) -> AccessKey {
+        let access_key: String = env
+            .get_string(jni_access_key)
             .expect("Failed to parse private ref")
             .into();
-        let pref = serde_json::from_str::<PrivateRef>(&private_ref).unwrap();
+        let pref = serde_json::from_str::<AccessKey>(&access_key).unwrap();
         trace!("**********************deserialize_pref started**************");
         trace!("**********************deserialize_pref pref={:?}", pref);
         pref
@@ -768,7 +783,7 @@ pub mod android {
                         
                         let created = item.1.clone().get_created();
                         let modification = item.1.clone().get_modified();
-                        if (created.is_some() && modification.is_some()) {
+                        if created.is_some() && modification.is_some() {
                             let filename: String = item.0.clone().to_string().to_owned();
                             let creation_time: String = created.unwrap().to_string().to_owned();
                             let modification_time: String = modification.unwrap().to_string().to_owned();
