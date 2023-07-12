@@ -75,10 +75,9 @@ class WNFSTest {
         println(privateForest)
 
 
-        var config = createRootDir(client, privateForest, wnfsKey)
-        Log.d("AppMock", "config crecreateRootDirated. cid="+config.cid+" & private_ref="+config.private_ref)
+        var config: Config = init(client, wnfsKey)
+        Log.d("AppMock", "config crecreateRootDirated. cid="+config.cid)
         assertNotNull("cid should not be null", config.cid)
-        assertNotNull("private_ref should not be null", config.private_ref)
 
         val fileNames_initial: ByteArray = ls(
             client 
@@ -104,7 +103,7 @@ class WNFSTest {
 
 /* 
         try {
-            val config_err = writeFileFromPath(client, config.cid, config.private_ref, "root/testfrompath.txt", "file://"+pathString+"/test.txt")
+            val config_err = writeFileFromPath(client, config.cid, "root/testfrompath.txt", "file://"+pathString+"/test.txt")
             Log.d("AppMock", "config_err writeFile. config_err="+config_err)
         } catch (e: Exception) {
             assertNotNull("config should not be null", e)
@@ -112,66 +111,66 @@ class WNFSTest {
         }
  */       
 
-        config = writeFileFromPath(client, config.cid, config.private_ref, "root/testfrompath.txt", pathString+"/test.txt") //target folder does not need to exist
-        Log.d("AppMock", "config writeFile. cid="+config.cid+" & private_ref="+config.private_ref)
+        config = writeFileFromPath(client, config.cid, "root/testfrompath.txt", pathString+"/test.txt") //target folder does not need to exist
+        Log.d("AppMock", "config writeFile. cid="+config.cid)
         assertNotNull("config should not be null", config)
         assertNotNull("cid should not be null", config.cid)
         
 
 
-        val contentfrompath = readFile(client, config.cid, config.private_ref, "root/testfrompath.txt")
+        val contentfrompath = readFile(client, config.cid, "root/testfrompath.txt")
         assert(contentfrompath contentEquals "Hello, World!".toByteArray())
         Log.d("AppMock", "readFileFromPath. content="+contentfrompath.toString())
 
 
-        val contentfrompathtopath: String = readFileToPath(client, config.cid, config.private_ref, "root/testfrompath.txt", pathString+"/test2.txt")
+        val contentfrompathtopath: String = readFileToPath(client, config.cid, "root/testfrompath.txt", pathString+"/test2.txt")
         Log.d("AppMock", "contentfrompathtopath="+contentfrompathtopath)
         assertNotNull("contentfrompathtopath should not be null", contentfrompathtopath)
         val readcontent: ByteArray = File(contentfrompathtopath).readBytes()
         assert(readcontent contentEquals "Hello, World!".toByteArray())
         Log.d("AppMock", "readFileFromPathOfReadTo. content="+String(readcontent))
 
-        val contentstreamfrompathtopath: String = readFilestreamToPath(client, config.cid, config.private_ref, "root/testfrompath.txt", pathString+"/teststream.txt")
+        val contentstreamfrompathtopath: String = readFilestreamToPath(client, config.cid, "root/testfrompath.txt", pathString+"/teststream.txt")
         Log.d("AppMock", "contentstreamfrompathtopath="+contentstreamfrompathtopath)
         assertNotNull("contentstreamfrompathtopath should not be null", contentstreamfrompathtopath)
         val readcontentstream: ByteArray = File(contentstreamfrompathtopath).readBytes()
         assert(readcontentstream contentEquals "Hello, World!".toByteArray())
         Log.d("AppMock", "readFileFromPathOfReadstreamTo. content="+String(readcontentstream))
 
-        config = cp(client, config.cid, config.private_ref, "root/testfrompath.txt", "root/testfrompathcp.txt") //target folder must exists
-        val content_cp = readFile(client, config.cid, config.private_ref, "root/testfrompathcp.txt")
+        config = cp(client, config.cid, "root/testfrompath.txt", "root/testfrompathcp.txt") //target folder must exists
+        val content_cp = readFile(client, config.cid, "root/testfrompathcp.txt")
         Log.d("AppMock", "cp. content_cp="+String(content_cp))
         assert(content_cp contentEquals "Hello, World!".toByteArray())
 
-        config = mv(client, config.cid, config.private_ref, "root/testfrompath.txt", "root/testfrompathmv.txt") //target folder must exists
-        val content_mv = readFile(client, config.cid, config.private_ref, "root/testfrompathmv.txt")
+        config = mv(client, config.cid, "root/testfrompath.txt", "root/testfrompathmv.txt") //target folder must exists
+        val content_mv = readFile(client, config.cid, "root/testfrompathmv.txt")
         Log.d("AppMock", "mv. content_mv="+String(content_mv))
         assert(content_mv contentEquals "Hello, World!".toByteArray())
 
-        config = rm(client, config.cid, config.private_ref, "root/testfrompathmv.txt")
-        val content2 = readFile(client, config.cid, config.private_ref, "root/testfrompathmv.txt")
+        config = rm(client, config.cid, "root/testfrompathmv.txt")
+        val content2 = readFile(client, config.cid, "root/testfrompathmv.txt")
         Log.d("AppMock", "rm. content="+String(content2))
         assert(content2 contentEquals "".toByteArray())
 
-        config = rm(client, config.cid, config.private_ref, "root/testfrompathcp.txt")
-        val content3 = readFile(client, config.cid, config.private_ref, "root/testfrompathcp.txt")
+        config = rm(client, config.cid, "root/testfrompathcp.txt")
+        val content3 = readFile(client, config.cid, "root/testfrompathcp.txt")
         Log.d("AppMock", "rm. content="+String(content3))
         assert(content3 contentEquals "".toByteArray())
 
 
-        config = writeFile(client, config.cid, config.private_ref, "root/test.txt", "Hello, World!".toByteArray())
+        config = writeFile(client, config.cid, "root/test.txt", "Hello, World!".toByteArray())
         assertNotNull("cid should not be null", config.cid)
-        Log.d("AppMock", "config writeFile. cid="+config.cid+" & private_ref="+config.private_ref)
+        Log.d("AppMock", "config writeFile. cid="+config.cid)
 
-        config = mkdir(client,  config.cid, config.private_ref, "root/test1")
-        Log.d("AppMock", "config mkdir. cid="+config.cid+" & private_ref="+config.private_ref)
+        config = mkdir(client,  config.cid, "root/test1")
+        Log.d("AppMock", "config mkdir. cid="+config.cid)
 
-        val fileNames: ByteArray = ls(client, config.cid, config.private_ref, "root")
+        val fileNames: ByteArray = ls(client, config.cid, "root")
         Log.d("AppMock", "ls. fileNames="+String(fileNames))
         //assertEquals(fileNames, "[{\"name\":\"test.txt\",\"creation\":\"2022-12-17 00:36:02 UTC\",\"modification\":\"2022-12-17 00:36:02 UTC\"},{\"name\":\"test1\",\"creation\":\"\",\"modification\":\"]\"}]")
         
 
-        val content = readFile(client, config.cid, config.private_ref, "root/test.txt")
+        val content = readFile(client, config.cid, "root/test.txt")
         assert(content contentEquals "Hello, World!".toByteArray())
         Log.d("AppMock", "readFile. content="+content.toString())
 
@@ -179,10 +178,7 @@ class WNFSTest {
 
         Log.d("AppMock", "wnfs12 Testing reload with cid="+config.cid+" & wnfsKey="+wnfsKey.toString())
         //Testing reload Directory
-        var private_ref_reload: String = getPrivateRef(client, wnfsKey, config.cid)
-        Log.d("AppMock", "wnfs12 original PrivateRef. private_ref="+config.private_ref)
-        Log.d("AppMock", "wnfs12 getPrivateRef. private_ref="+private_ref_reload)
-        assertNotNull("private_ref should not be null", private_ref_reload)
+        loadWithWNFSKey(client, wnfsKey, config.cid)
 
         val fileNames_reloaded: ByteArray = ls(client, config.cid, private_ref_reload, "root")
         //assertEquals(fileNames_reloaded, "test.txt\ntest1")
@@ -192,7 +188,7 @@ class WNFSTest {
         Log.d("AppMock", "readFile. content="+content_reloaded.toString())
         assert(content_reloaded contentEquals "Hello, World!".toByteArray())
 
-        val contentfrompathtopath_reloaded: String = readFileToPath(client, config.cid, private_ref_reload, "root/test.txt", pathString+"/test2.txt")
+        val contentfrompathtopath_reloaded: String = readFileToPath(client, config.cid, "root/test.txt", pathString+"/test2.txt")
         Log.d("AppMock", "contentfrompathtopath_reloaded="+contentfrompathtopath_reloaded)
         assertNotNull("contentfrompathtopath_reloaded should not be null", contentfrompathtopath_reloaded)
         val readcontent_reloaded: ByteArray = File(contentfrompathtopath_reloaded).readBytes()

@@ -10,43 +10,54 @@ import java.util.LinkedList;
 import java.util.List;
 import org.json.JSONObject;
 import org.json.JSONArray;
+import land.fx.wnfslib.*;;
 
 public final class Fs {
 
-    private static native String createPrivateForestNative(Datastore datastore);
+    private static native String initNative(Datastore datastore, byte[] wnfsKey);
 
-    private static native String getPrivateRefNative(Datastore datastore, byte[] wnfsKey, String cid);
+    private static native String loadWithWNFSKeyNative(Datastore datastore, byte[] wnfsKey, String cid);
 
-    private static native Config createRootDirNative(Datastore datastore, String cid, byte[] wnfsKey);
+    private static native Config writeFileFromPathNative(Datastore datastore, String cid, String path, String filename);
 
-    private static native Config writeFileFromPathNative(Datastore datastore, String cid, String privateRef, String path, String filename);
+    private static native Config writeFileNative(Datastore datastore, String cid, String path, byte[] content);
 
-    private static native Config writeFileNative(Datastore datastore, String cid, String privateRef, String path, byte[] content);
+    private static native byte[] lsNative(Datastore datastore, String cid, String path);
 
-    private static native byte[] lsNative(Datastore datastore, String cid, String privateRef, String path);
+    private static native Config mkdirNative(Datastore datastore, String cid, String path);
 
-    private static native Config mkdirNative(Datastore datastore, String cid, String privateRef, String path);
+    private static native Config rmNative(Datastore datastore, String cid, String path);
 
-    private static native Config rmNative(Datastore datastore, String cid, String privateRef, String path);
+    private static native Config mvNative(Datastore datastore, String cid, String sourcePath, String targetPath);
 
-    private static native Config mvNative(Datastore datastore, String cid, String privateRef, String sourcePath, String targetPath);
+    private static native Config cpNative(Datastore datastore, String cid, String sourcePath, String targetPath);
 
-    private static native Config cpNative(Datastore datastore, String cid, String privateRef, String sourcePath, String targetPath);
+    private static native String readFileToPathNative(Datastore datastore, String cid, String path, String filename);
 
-    private static native String readFileToPathNative(Datastore datastore, String cid, String privateRef, String path, String filename);
-
-    private static native String readFilestreamToPathNative(Datastore datastore, String cid, String privateRef, String path, String filename);
+    private static native String readFilestreamToPathNative(Datastore datastore, String cid, String path, String filename);
     
-    private static native byte[] readFileNative(Datastore datastore, String cid, String privateRef, String path);
+    private static native byte[] readFileNative(Datastore datastore, String cid, String path);
+
+    class WnfsException extends Exception
+{
+
+      public WnfsException() {}
+
+      // Constructor that accepts a message
+      public WnfsException(String func ,String reason)
+      {
+         super(String.format("An Error Occured in Fs.%s: %s", func, reason));
+      }
+ }
 
     @NonNull
-    public static String createPrivateForest(Datastore datastore) throws Exception {
+    public static Config init(Datastore datastore, byte[] wnfsKey) throws Exception {
         try {
-            String res = createPrivateForestNative(datastore);
-            if(res != null && !res.isEmpty()) {
-                return res;
+            ConfigResult res = initNative(datastore, cid, path, filename);
+            if(res != null && res.ok()) {
+                return res.getResult();
             } else {
-                throw new Exception("An Error Occured in Fs.createPrivateForest Search logs for wnfsError to find out more.");
+                throw new WnfsException("Fs.init", res.getReason());
             }
         }
         catch(Exception e) {
@@ -55,13 +66,11 @@ public final class Fs {
     }
 
     @NonNull
-    public static String getPrivateRef(Datastore datastore, byte[] wnfsKey, String cid) throws Exception {
+    public static void loadWithWNFSKey(Datastore datastore, byte[] wnfsKey, String cid) throws Exception {
         try {
-            String res = getPrivateRefNative(datastore, wnfsKey, cid);
-            if(res != null && !res.isEmpty()) {
-                return res;
-            } else {
-                throw new Exception("An Error Occured in Fs.getPrivateRef Search logs for wnfsError to find out more.");
+            Result res = loadWithWNFSKeyNative(datastore, wnfsKey, cid);
+            if(res == null || !res.ok()) {
+                throw new WnfsException("Fs.loadWithWNFSKey", res.getReason());
             }
         }
         catch(Exception e) {
@@ -70,28 +79,13 @@ public final class Fs {
     }
 
     @NonNull
-    public static Config createRootDir(Datastore datastore, String cid, byte[] wnfsKey) throws Exception {
+    public static Config writeFileFromPath(Datastore datastore, String cid, String path, String filename) throws Exception {
         try {
-            Config res = createRootDirNative(datastore, cid, wnfsKey);
-            if(res != null) {
-                return res;
+            ConfigResult res = writeFileFromPathNative(datastore, cid, path, filename);
+            if(res != null && res.ok()) {
+                return res.getResult();
             } else {
-                throw new Exception("An Error Occured in Fs.createRootDir. Search logs for wnfsError to find out more.");
-            }
-        } 
-        catch(Exception e) {
-            throw new Exception(e.getMessage());
-        }
-    }
-
-    @NonNull
-    public static Config writeFileFromPath(Datastore datastore, String cid, String privateRef, String path, String filename) throws Exception {
-        try {
-            Config res = writeFileFromPathNative(datastore, cid, privateRef, path, filename);
-            if(res != null) {
-                return res;
-            } else {
-                throw new Exception("An Error Occured in Fs.writeFileFromPath Search logs for wnfsError to find out more.");
+                throw new WnfsException("Fs.writeFileFromPath", res.getReason());
             }
         } 
         catch(Exception e) {
@@ -100,13 +94,13 @@ public final class Fs {
     }
 
     @NonNull
-    public static Config writeFile(Datastore datastore, String cid, String privateRef, String path, byte[] content) throws Exception {
+    public static Config writeFile(Datastore datastore, String cid, String path, byte[] content) throws Exception {
         try {
-            Config res = writeFileNative(datastore, cid, privateRef, path, content);
-            if(res != null) {
-                return res;
+            ConfigResult res = writeFileNative(datastore, cid, path, content);
+            if(res != null && res.ok()) {
+                return res.getResult();
             } else {
-                throw new Exception("An Error Occured in Fs.writeFile Search logs for wnfsError to find out more.");
+                throw new WnfsException("Fs.writeFile", res.getReason());
             }
         } 
         catch(Exception e) {
@@ -115,12 +109,17 @@ public final class Fs {
     }
 
     @NonNull
-    public static byte[] ls(Datastore datastore, String cid, String privateRef, String path) throws Exception {
+    public static byte[] ls(Datastore datastore, String cid, String path) throws Exception {
         try {
             
             Log.d("wnfs", "JSONArray is reached2");
-            byte[] lsResult = lsNative(datastore, cid, privateRef, path);
+            BytesResult res = lsNative(datastore, cid, path, content);
             Log.d("wnfs", "lsResult is reached: ");
+            if(res != null && res.ok()) {
+                return res.getResult();
+            } else {
+                throw new WnfsException("Fs.writeFile", res.getReason());
+            }
             /*JSONArray output = new JSONArray();
             byte[] rowSeparatorPattern = {33, 33, 33}; //!!!
             byte[] itemSeparatorPattern = {63, 63, 63}; //???
@@ -149,8 +148,6 @@ public final class Fs {
                 }
                 
             }*/
-
-            return lsResult;
         }
         catch(Exception e) {
             throw new Exception(e.getMessage());
@@ -158,13 +155,13 @@ public final class Fs {
     }
 
     @NonNull
-    public static Config mkdir(Datastore datastore, String cid, String privateRef, String path) throws Exception {
+    public static Config mkdir(Datastore datastore, String cid, String path) throws Exception {
         try {
-            Config res = mkdirNative(datastore, cid, privateRef, path);
-            if(res != null) {
-                return res;
+            ConfigResult res = mkdirNative(datastore, cid, path);
+            if(res != null && res.ok()) {
+                return res.getResult();
             } else {
-                throw new Exception("An Error Occured in Fs.mkdir Search logs for wnfsError to find out more.");
+                throw new WnfsException("Fs.mkdir", res.getReason());
             }
         } 
         catch(Exception e) {
@@ -173,28 +170,58 @@ public final class Fs {
     }
 
     @NonNull
-    public static Config rm(Datastore datastore, String cid, String privateRef, String path) {
-        return rmNative(datastore, cid, privateRef, path);
-    }
-
-    @NonNull
-    public static Config mv(Datastore datastore, String cid, String privateRef, String sourcePath, String targetPath) {
-        return mvNative(datastore, cid, privateRef, sourcePath, targetPath);
-    }
-
-    @NonNull
-    public static Config cp(Datastore datastore, String cid, String privateRef, String sourcePath, String targetPath) {
-        return cpNative(datastore, cid, privateRef, sourcePath, targetPath);
-    }
-
-    @NonNull
-    public static String readFileToPath(Datastore datastore, String cid, String privateRef, String path, String filename) throws Exception {
-        try{
-            String res = readFileToPathNative(datastore, cid, privateRef, path, filename);
-            if(res != null && !res.isEmpty()) {
-                return res;
+    public static Config rm(Datastore datastore, String cid, String path) {
+        try {
+            ConfigResult res = rmNative(datastore, cid, path);
+            if(res != null && res.ok()) {
+                return res.getResult();
             } else {
-                throw new Exception("An Error Occured in Fs.readFileToPathNative Search logs for wnfsError to find out more.");
+                throw new WnfsException("Fs.rm", res.getReason());
+            }
+        } 
+        catch(Exception e) {
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    @NonNull
+    public static Config mv(Datastore datastore, String cid, String sourcePath, String targetPath) {
+        try {
+            ConfigResult res = mvNative(datastore, cid, sourcePath, targetPath);
+            if(res != null && res.ok()) {
+                return res.getResult();
+            } else {
+                throw new WnfsException("Fs.mv", res.getReason());
+            }
+        } 
+        catch(Exception e) {
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    @NonNull
+    public static Config cp(Datastore datastore, String cid, String sourcePath, String targetPath) {
+        try {
+            ConfigResult res = cpNative(datastore, cid, sourcePath, targetPath);
+            if(res != null && res.ok()) {
+                return res.getResult();
+            } else {
+                throw new WnfsException("Fs.cp", res.getReason());
+            }
+        } 
+        catch(Exception e) {
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    @NonNull
+    public static String readFileToPath(Datastore datastore, String cid, String path, String filename) throws Exception {
+        try{
+            StringResult res = readFileToPathNative(datastore, cid, path, filename);
+            if(res != null && !res.isEmpty()) {
+                return res.getResult();
+            } else {
+                throw new WnfsException("Fs.readFileToPathNative", res.getReason());
             }
         }
         catch(Exception e) {
@@ -203,13 +230,13 @@ public final class Fs {
     }
 
     @NonNull
-    public static String readFilestreamToPath(Datastore datastore, String cid, String privateRef, String path, String filename) throws Exception {
+    public static String readFilestreamToPath(Datastore datastore, String cid, String path, String filename) throws Exception {
         try{
-            String res = readFilestreamToPathNative(datastore, cid, privateRef, path, filename);
+            StringResult res = readFilestreamToPathNative(datastore, cid, path, filename);
             if(res != null && !res.isEmpty()) {
-                return res;
+                return res.getResult();
             } else {
-                throw new Exception("An Error Occured in Fs.readFilestreamToPathNative Search logs for wnfsError to find out more.");
+                throw new WnfsException("Fs.readFilestreamToPathNative", res.getReason());
             }
         }
         catch(Exception e) {
@@ -217,8 +244,18 @@ public final class Fs {
         }
     }
 
-    public static byte[] readFile(Datastore datastore, String cid, String privateRef, String path) {
-        return readFileNative(datastore, cid, privateRef, path);
+    public static byte[] readFile(Datastore datastore, String cid, String path) {
+        try{
+            BytesResult res = readFileNative(datastore, cid, path);
+            if(res != null && !res.isEmpty()) {
+                return res.getResult();
+            } else {
+                throw new WnfsException("Fs.readFileNative", res.getReason());
+            }
+        }
+        catch(Exception e) {
+            throw new Exception(e.getMessage());
+        }
     }
 
     public static native void initRustLogger();
