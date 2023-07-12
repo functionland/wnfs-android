@@ -9,8 +9,7 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 wnfs = {git= "https://github.com/wnfs-wg/rs-wnfs.git", tag="wnfs-v0.1.22"}
-# wnfsutils = { git = "https://github.com/functionland/wnfs-utils.git", tag = "0.1.22" }
-wnfsutils = { path= "/home/ox26a/Projects/functionland/wnfs-utils"}
+wnfsutils = { git = "https://github.com/functionland/wnfs-utils.git", tag = "0.1.22" }
 libipld = { version = "0.16", features = ["dag-cbor", "derive", "serde-codec"] }
 anyhow = "1.0.66"
 serde = "1.0.149"
