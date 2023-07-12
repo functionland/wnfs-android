@@ -7,6 +7,8 @@ import androidx.test.rule.ActivityTestRule
 import fulamobile.Fulamobile
 import land.fx.wnfslib.Fs.*
 import land.fx.wnfslib.Config
+import land.fx.wnfslib.result.*
+import land.fx.wnfslib.exceptions.*
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -19,8 +21,8 @@ import java.security.MessageDigest
 @RunWith(AndroidJUnit4::class)
 class WNFSTest {
     class ConvertFulaClient(private val fulaClient: fulamobile.Client): land.fx.wnfslib.Datastore{
-        override fun put(data: ByteArray, codec: Long): ByteArray{
-            return fulaClient.put(data, codec)
+        override fun put(cid: ByteArray, data: ByteArray): ByteArray{
+            return fulaClient.put(data, 113)
         }
         override fun get(cid: ByteArray): ByteArray{
 
@@ -69,12 +71,6 @@ class WNFSTest {
         Log.d("AppMock", "get test was successful=$testData")
         */
 
-        val privateForest = createPrivateForest(client)
-        Log.d("AppMock", "privateForest created=$privateForest")
-        println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
-        println(privateForest)
-
-
         var config: Config = init(client, wnfsKey)
         Log.d("AppMock", "config crecreateRootDirated. cid="+config.cid)
         assertNotNull("cid should not be null", config.cid)
@@ -82,7 +78,6 @@ class WNFSTest {
         val fileNames_initial: ByteArray = ls(
             client 
             , "bafyreieqp253whdfdrky7hxpqezfwbkjhjdbxcq4mcbp6bqf4jdbncbx4y" 
-            , "{\"saturated_name_hash\":[229,31,96,28,24,238,207,22,36,150,191,37,235,68,191,144,219,250,5,97,85,208,156,134,137,74,25,209,6,66,250,127],\"content_key\":[172,199,245,151,207,21,26,76,52,109,93,57,118,232,9,230,149,46,37,137,174,42,119,29,102,175,25,149,213,204,45,15],\"revision_key\":[17,5,78,59,8,135,144,240,41,248,135,168,222,186,158,240,100,10,129,4,180,55,126,115,146,239,22,177,207,118,169,51]}"
             , "root/"
         )
         Log.d("AppMock", "ls_initial. fileNames_initial="+String(fileNames_initial))
@@ -180,11 +175,11 @@ class WNFSTest {
         //Testing reload Directory
         loadWithWNFSKey(client, wnfsKey, config.cid)
 
-        val fileNames_reloaded: ByteArray = ls(client, config.cid, private_ref_reload, "root")
+        val fileNames_reloaded: ByteArray = ls(client, config.cid, "root")
         //assertEquals(fileNames_reloaded, "test.txt\ntest1")
         
 
-        val content_reloaded = readFile(client, config.cid, private_ref_reload, "root/test.txt")
+        val content_reloaded = readFile(client, config.cid, "root/test.txt")
         Log.d("AppMock", "readFile. content="+content_reloaded.toString())
         assert(content_reloaded contentEquals "Hello, World!".toByteArray())
 

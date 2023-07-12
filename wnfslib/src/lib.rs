@@ -159,9 +159,10 @@ pub mod android {
         let forest_cid = deserialize_cid(env, jni_cid);
         trace!("cid: {}", forest_cid);
         let wnfs_key: Vec<u8> = jbyte_array_to_vec(env, jni_wnfs_key);
-        let (helper_res, cid) = PrivateDirectoryHelper::synced_init(block_store, wnfs_key);
+        let helper_res = PrivateDirectoryHelper::synced_init(block_store, wnfs_key);
         
         if helper_res.is_ok() {
+            let (_, _, cid) = helper_res.unwrap();
             unsafe {
             serialize_config_result(env, None, Some(cid))
             }
