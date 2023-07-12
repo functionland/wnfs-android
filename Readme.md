@@ -30,6 +30,19 @@ Use Ubuntu (on Windows it complains about openssl)
 - gradle
 - rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-android x86_64-linux-android
 
+## Common Errors
+- Make sure the build.gradle shows the correct ndk version you have if you see:
+  
+```bash
+[CXX1104] NDK from ndk.dir at /.../ndk/25.2.9519653 had version [25....] which disagrees with android.ndkVersion [25.1.8937393]
+```
+
+- Make sure you define a local.properties file in the project root with the below line in it if you see NDK not found:
+- 
+```bash
+ndk.dir=/paht-to-ndk/ndk/25.....
+```
+
 ## Debug
 
 Make sure you have switch to `debug` profile in cargo config, which could be found at `lib/build.gradle` 
