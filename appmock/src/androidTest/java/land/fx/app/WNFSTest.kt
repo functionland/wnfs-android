@@ -96,8 +96,8 @@ class WNFSTest {
 
         val fileNames_initial: ByteArray = ls(
             client 
-            , "bafyreieqp253whdfdrky7hxpqezfwbkjhjdbxcq4mcbp6bqf4jdbncbx4y" 
-            , "root/"
+            , config.cid 
+            , "/root"
         )
         Log.d("AppMock", "ls_initial. fileNames_initial="+String(fileNames_initial))
 
