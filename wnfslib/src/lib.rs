@@ -627,7 +627,7 @@ pub mod android {
 
     pub unsafe fn serialize_result(env: JNIEnv, err: Option<String>) -> jobject {
         trace!("**********************serialize_result started**************");
-        create_result_object(env, "Result".into(), err, JObject::null().into())
+        create_result_object(env, "Result".into(), "Ljava/lang/Object;".into(),err, JObject::null().into())
     }
 
     pub unsafe fn serialize_bytes_result(env: JNIEnv, err: Option<String>, bytes: Option<Vec<u8>>) -> jobject {
@@ -636,7 +636,7 @@ pub mod android {
                 Some(bytes) => vec_to_jbyte_array(env, bytes),
                 None => JObject::null().into_inner(),
         };
-        create_result_object(env, "BytesResult".into(), err, result.into())
+        create_result_object(env, "BytesResult".into(), "[B".into(),err, result.into())
     }
 
     pub unsafe fn serialize_string_result(env: JNIEnv, err: Option<String>, text: Option<String>) -> jobject {
@@ -645,7 +645,7 @@ pub mod android {
                 Some(text) => serialize_string(env, text),
                 None => JObject::null().into(),
         };
-        create_result_object(env, "StringResult".into(), err, result.into())
+        create_result_object(env, "StringResult".into(), "Ljava/lang/String;".into(),err, result.into())
     }
 
     pub fn serialize_config(env: JNIEnv, cid: Cid) -> jobject {
@@ -690,18 +690,20 @@ pub mod android {
             Some(cid) => serialize_config(env, cid),
             None => JObject::null().into_inner(),
         };
-        create_result_object(env, "ConfigResult".into(), err, result.into())
+        create_result_object(env, "ConfigResult".into(), "Lland/fx/wnfslib/Config;".into(), err, result.into())
     }
 
-    pub fn create_result_object(env: JNIEnv, java_class_name: String, err: Option<String>, result: JObject) -> jobject {
+    pub fn create_result_object(env: JNIEnv, java_class_name: String, java_object_path: String, err: Option<String>, result: JObject) -> jobject {
         ////let result_cls = env.find_class("land/fx/wnfslib/result/ConfigResult").unwrap();
-        let result_cls = env.find_class(format!("land/fx/wnfslib/result/{}", java_class_name)).unwrap();
+        let result_cls = env.find_class(format!("land/fx/wnfslib/result/{}", java_class_name))
+            .expect(format!("class result {} not found", java_class_name).as_str());
+            //.unwrap();
         trace!("**********************create_result_object result_cls set**************");
         let create_result_fn_res = env
             .get_static_method_id(
                 result_cls,
                 "create",
-                format!("(Ljava/lang/String;Ljava/lang/Object;)Lland/fx/wnfslib/result/{};", java_class_name),
+                format!("(Ljava/lang/String;{})Lland/fx/wnfslib/result/{};", java_object_path, java_class_name),
             );
         if create_result_fn_res.is_ok() {
             let create_result_fn = create_result_fn_res.ok().unwrap();
