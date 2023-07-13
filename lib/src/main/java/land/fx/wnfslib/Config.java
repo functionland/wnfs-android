@@ -16,7 +16,7 @@ public final class Config {
         this.cid = cid;
     }
 
-    public static Config create(String cid1, String private_ref1) {
+    public static Config create(String cid1) {
         return new Config(cid1);
     }
 }

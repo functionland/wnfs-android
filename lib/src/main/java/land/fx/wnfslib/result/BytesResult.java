@@ -1,4 +1,4 @@
-package land.fx.wnfslib;
+package land.fx.wnfslib.result;
 
 import land.fx.wnfslib.result.TypedResult;
 

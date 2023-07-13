@@ -640,7 +640,7 @@ pub mod android {
     }
 
     pub unsafe fn serialize_string_result(env: JNIEnv, err: Option<String>, text: Option<String>) -> jobject {
-        trace!("**********************serialize_result started**************");
+        trace!("**********************serialize_string_result started**************");
         let result = match text {
                 Some(text) => serialize_string(env, text),
                 None => JObject::null().into(),
@@ -648,24 +648,59 @@ pub mod android {
         create_result_object(env, "StringResult".into(), err, result.into())
     }
 
-
+    pub fn serialize_config(env: JNIEnv, cid: Cid) -> jobject {
+        // Get the Config class
+        let config_class = env.find_class("land/fx/wnfslib/Config").unwrap();
+        
+        // Convert the Cid to a string
+        let cid_string = env.new_string(cid.to_string()).unwrap();
+    
+        // Create a new Config object
+        let create_config_object_fn_res = env
+            .get_static_method_id(
+                config_class,
+                "create",
+                format!("(Ljava/lang/String;)Lland/fx/wnfslib/Config;"),
+            );
+        if create_config_object_fn_res.is_ok() {
+            let create_config_object_fn = create_config_object_fn_res.ok().unwrap();
+            let result_res = env
+                .call_static_method_unchecked(
+                    config_class,
+                    create_config_object_fn,
+                    JavaType::Object(format!("land/fx/wnfslib/result/Config")),
+                    &[JValue::Object(*cid_string)],
+                ).expect("Couldn't create new Config object");
+        
+                return result_res.l().unwrap().into_inner();
+        } else {
+            trace!("wnfsError occured in serialize_config create_config_object_fn_res: {:?}", create_config_object_fn_res.err().unwrap().to_string());
+            return JObject::null().into_inner();
+        }
+    }
+    
+    
     pub unsafe fn serialize_config_result(env: JNIEnv, err: Option<String>, cid: Option<Cid>) -> jobject {
-        trace!("**********************serialize_result started**************");
-        let result = match cid {
+        trace!("**********************serialize_config_result started**************");
+        /*let result = match cid {
                 Some(cid) => serialize_cid(env, cid),
                 None => JObject::null().into(),
+        };*/
+        let result: jobject = match cid {
+            Some(cid) => serialize_config(env, cid),
+            None => JObject::null().into_inner(),
         };
         create_result_object(env, "ConfigResult".into(), err, result.into())
     }
 
     pub fn create_result_object(env: JNIEnv, java_class_name: String, err: Option<String>, result: JObject) -> jobject {
-        let result_cls = env.find_class("land/fx/wnfslib/ConfigResult").unwrap();
+        let result_cls = env.find_class("land/fx/wnfslib/result/ConfigResult").unwrap();
         trace!("**********************create_result_object result_cls set**************");
         let create_result_fn_res = env
             .get_static_method_id(
                 result_cls,
                 "create",
-                format!("(Ljava/lang/String;Ljava/lang/Object;)Lland/fx/wnfslib/{};", java_class_name),
+                format!("(Ljava/lang/String;Lland/fx/wnfslib/Config;)Lland/fx/wnfslib/result/{};", java_class_name),
             );
         if create_result_fn_res.is_ok() {
             let create_result_fn = create_result_fn_res.ok().unwrap();
@@ -676,11 +711,12 @@ pub mod android {
                 None => JObject::null().into(),
             };
             trace!("**********************create_result_object almost finished**************");
+            trace!("Result object: {:?}", result);
             let result_res = env
                 .call_static_method_unchecked(
                     result_cls,
                     create_result_fn,
-                    JavaType::Object(format!("land/fx/wnfslib/{}", java_class_name)),
+                    JavaType::Object(format!("land/fx/wnfslib/result/{}", java_class_name)),
                     &[JValue::from(err_java), JValue::from(result)],
                 );
             if result_res.is_ok() {
