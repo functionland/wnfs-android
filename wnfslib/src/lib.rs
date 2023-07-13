@@ -150,14 +150,11 @@ pub mod android {
         env: JNIEnv,
         _: JClass,
         jni_fula_client: JObject,
-        jni_cid: JString,
         jni_wnfs_key: jbyteArray,
     ) -> jobject {
         trace!("**********************createRootDirNative started**************");
         let store = JNIStore::new(env, jni_fula_client);
         let block_store = &mut FFIFriendlyBlockStore::new(Box::new(store));
-        let forest_cid = deserialize_cid(env, jni_cid);
-        trace!("cid: {}", forest_cid);
         let wnfs_key: Vec<u8> = jbyte_array_to_vec(env, jni_wnfs_key);
         let helper_res = PrivateDirectoryHelper::synced_init(block_store, wnfs_key);
         
