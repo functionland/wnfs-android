@@ -16,6 +16,7 @@ import org.junit.runner.RunWith
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
+import java.util.UUID
 
 
 @RunWith(AndroidJUnit4::class)
@@ -31,18 +32,18 @@ class WNFSTest {
         }
 
         override fun put(cid: ByteArray, data: ByteArray): ByteArray{
-            logByteArray("AppMock", "put in fulaClient data=", data)
-            logByteArray("AppMock", "put in fulaClient cid=", cid)
+            logByteArray("FulaClient", "put in fulaClient data=", data)
+            logByteArray("FulaClient", "put in fulaClient cid=", cid)
             val codec = cid[1].toLong() and 0xFF
-            Log.d("AppMock", "put codec=" + codec)
+            Log.d("FulaClient", "put codec=" + codec)
             val put_cid = fulaClient.put(data, codec)
-            logByteArray("AppMock", "put in fulaClient returned put_cid=", put_cid)
+            logByteArray("FulaClient", "put in fulaClient returned put_cid=", put_cid)
             return put_cid
         }
         override fun get(cid: ByteArray): ByteArray{
-            logByteArray("AppMock", "get in fulaClient cid=", cid)
+            logByteArray("FulaClient", "get in fulaClient cid=", cid)
             val get_data = fulaClient.get(cid)
-            logByteArray("AppMock", "get in fulaClient returned get_data=", get_data)
+            logByteArray("FulaClient", "get in fulaClient returned get_data=", get_data)
             return get_data
         }
     }
@@ -94,6 +95,19 @@ class WNFSTest {
         Log.d("AppMock", "config createRootDirated. cid="+config.cid)
         assertNotNull("cid should not be null", config.cid)
 
+        try {
+            val fileNames_initial: ByteArray = ls(
+                client 
+                , config.cid 
+                , "/" + UUID.randomUUID().toString()
+            )
+            Log.d("AppMock", "ls_initial. fileNames_initial="+String(fileNames_initial))
+        }  catch (e: Exception) {
+            val contains = e.message?.contains("find", true)
+            Log.d("AppMock", "ls_initial. error="+e.message)
+            assertEquals(contains, true)
+        }
+
         val testContent = "Hello, World!".toByteArray()
 
         val file = File(pathString, "test.txt")
@@ -132,7 +146,7 @@ class WNFSTest {
 
         val contentfrompath = readFile(client, config.cid, "/root/testfrompath.txt")
         assert(contentfrompath contentEquals "Hello, World!".toByteArray())
-        Log.d("AppMock", "readFileFromPath. content="+contentfrompath.toString())
+        Log.d("AppMock", "readFileFromPath. content="+String(contentfrompath))
 
 
         val contentfrompathtopath: String = readFileToPath(client, config.cid, "root/testfrompath.txt", pathString+"/test2.txt")
@@ -195,20 +209,24 @@ class WNFSTest {
 
         val content = readFile(client, config.cid, "root/test.txt")
         assert(content contentEquals "Hello, World!".toByteArray())
-        Log.d("AppMock", "readFile. content="+content.toString())
+        Log.d("AppMock", "readFile. content="+String(content))
 
         Log.d("AppMock", "All tests before reload passed")
 
-        Log.d("AppMock", "wnfs12 Testing reload with cid="+config.cid+" & wnfsKey="+wnfsKey.toString())
+        val fileNames_before_reloaded: ByteArray = ls(client, config.cid, "root")
+        Log.d("AppMock", "filenames_before_reloaded="+String(fileNames_before_reloaded))
+
+        Log.d("AppMock", "wnfs12 Testing reload with cid="+config.cid+" & wnfsKey="+wnfsKey)
         //Testing reload Directory
         loadWithWNFSKey(client, wnfsKey, config.cid)
 
         val fileNames_reloaded: ByteArray = ls(client, config.cid, "root")
-        //assertEquals(fileNames_reloaded, "test.txt\ntest1")
+        Log.d("AppMock", "filenames_reloaded="+String(fileNames_reloaded))
+        assertEquals(String(fileNames_reloaded), String(fileNames_before_reloaded))
         
 
         val content_reloaded = readFile(client, config.cid, "root/test.txt")
-        Log.d("AppMock", "readFile. content="+content_reloaded.toString())
+        Log.d("AppMock", "readFile. content="+String(content_reloaded))
         assert(content_reloaded contentEquals "Hello, World!".toByteArray())
 
         val contentfrompathtopath_reloaded: String = readFileToPath(client, config.cid, "root/test.txt", pathString+"/test2.txt")
@@ -216,7 +234,7 @@ class WNFSTest {
         assertNotNull("contentfrompathtopath_reloaded should not be null", contentfrompathtopath_reloaded)
         val readcontent_reloaded: ByteArray = File(contentfrompathtopath_reloaded).readBytes()
         assert(readcontent_reloaded contentEquals "Hello, World!".toByteArray())
-        Log.d("AppMock", "readFileFromPathOfReadTo. content="+readcontent_reloaded.toString())
+        Log.d("AppMock", "readFileFromPathOfReadTo. content="+String(readcontent_reloaded))
 
     }
 }
