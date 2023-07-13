@@ -694,13 +694,14 @@ pub mod android {
     }
 
     pub fn create_result_object(env: JNIEnv, java_class_name: String, err: Option<String>, result: JObject) -> jobject {
-        let result_cls = env.find_class("land/fx/wnfslib/result/ConfigResult").unwrap();
+        ////let result_cls = env.find_class("land/fx/wnfslib/result/ConfigResult").unwrap();
+        let result_cls = env.find_class(format!("land/fx/wnfslib/result/{}", java_class_name)).unwrap();
         trace!("**********************create_result_object result_cls set**************");
         let create_result_fn_res = env
             .get_static_method_id(
                 result_cls,
                 "create",
-                format!("(Ljava/lang/String;Lland/fx/wnfslib/Config;)Lland/fx/wnfslib/result/{};", java_class_name),
+                format!("(Ljava/lang/String;Ljava/lang/Object;)Lland/fx/wnfslib/result/{};", java_class_name),
             );
         if create_result_fn_res.is_ok() {
             let create_result_fn = create_result_fn_res.ok().unwrap();
