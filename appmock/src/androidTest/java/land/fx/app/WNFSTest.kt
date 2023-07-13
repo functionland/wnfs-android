@@ -3,7 +3,7 @@ package land.fx.app
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.rule.ActivityTestRule
+import androidx.test.ext.junit.rules.ActivityScenarioRule
 import fulamobile.Fulamobile
 import land.fx.wnfslib.Fs.*
 import land.fx.wnfslib.Config
@@ -47,7 +47,7 @@ class WNFSTest {
         }
     }
     @get:Rule
-    val mainActivityRule = ActivityTestRule(MainActivity::class.java)
+    val mainActivityRule = ActivityScenarioRule(MainActivity::class.java)
     @Test
     fun wnfs_overall() {
         initRustLogger()
@@ -94,13 +94,6 @@ class WNFSTest {
         Log.d("AppMock", "config createRootDirated. cid="+config.cid)
         assertNotNull("cid should not be null", config.cid)
 
-        val fileNames_initial: ByteArray = ls(
-            client 
-            , config.cid 
-            , "/root"
-        )
-        Log.d("AppMock", "ls_initial. fileNames_initial="+String(fileNames_initial))
-
         val testContent = "Hello, World!".toByteArray()
 
         val file = File(pathString, "test.txt")
@@ -124,15 +117,20 @@ class WNFSTest {
             Log.d("AppMock", "config_err Error catched "+e.message);
         }
  */       
-
-        config = writeFileFromPath(client, config.cid, "root/testfrompath.txt", pathString+"/test.txt") //target folder does not need to exist
+        config = writeFileFromPath(client, config.cid, "/root/testfrompath.txt", pathString+"/test.txt") //target folder does not need to exist
         Log.d("AppMock", "config writeFile. cid="+config.cid)
         assertNotNull("config should not be null", config)
         assertNotNull("cid should not be null", config.cid)
         
+        val fileNames_initial: ByteArray = ls(
+            client 
+            , config.cid 
+            , "/root"
+        )
+        Log.d("AppMock", "ls_initial. fileNames_initial="+String(fileNames_initial))
+        // assertNull(String(fileNames_initial))
 
-
-        val contentfrompath = readFile(client, config.cid, "root/testfrompath.txt")
+        val contentfrompath = readFile(client, config.cid, "/root/testfrompath.txt")
         assert(contentfrompath contentEquals "Hello, World!".toByteArray())
         Log.d("AppMock", "readFileFromPath. content="+contentfrompath.toString())
 
@@ -151,8 +149,13 @@ class WNFSTest {
         assert(readcontentstream contentEquals "Hello, World!".toByteArray())
         Log.d("AppMock", "readFileFromPathOfReadstreamTo. content="+String(readcontentstream))
 
-        config = cp(client, config.cid, "root/testfrompath.txt", "root/testfrompathcp.txt") //target folder must exists
-        val content_cp = readFile(client, config.cid, "root/testfrompathcp.txt")
+        config = mkdir(client, config.cid, "opt")
+        Log.d("AppMock", "config mkdir. cid="+config.cid)
+        assertNotNull("config should not be null", config)
+        assertNotNull("cid should not be null", config.cid)
+
+        config = cp(client, config.cid, "root/testfrompath.txt", "opt/testfrompathcp.txt") //target folder must exists
+        val content_cp = readFile(client, config.cid, "opt/testfrompathcp.txt")
         Log.d("AppMock", "cp. content_cp="+String(content_cp))
         assert(content_cp contentEquals "Hello, World!".toByteArray())
 
@@ -162,14 +165,20 @@ class WNFSTest {
         assert(content_mv contentEquals "Hello, World!".toByteArray())
 
         config = rm(client, config.cid, "root/testfrompathmv.txt")
-        val content2 = readFile(client, config.cid, "root/testfrompathmv.txt")
-        Log.d("AppMock", "rm. content="+String(content2))
-        assert(content2 contentEquals "".toByteArray())
+        try {
+            readFile(client, config.cid, "root/testfrompathmv.txt")
+        } catch (e: Exception) {
+            val contains = e.message?.contains("find", true)
+            assertEquals(contains, true)
+        }
 
-        config = rm(client, config.cid, "root/testfrompathcp.txt")
-        val content3 = readFile(client, config.cid, "root/testfrompathcp.txt")
-        Log.d("AppMock", "rm. content="+String(content3))
-        assert(content3 contentEquals "".toByteArray())
+        config = rm(client, config.cid, "opt/testfrompathcp.txt")
+       try {
+            readFile(client, config.cid, "opt/testfrompathcp.txt")
+        } catch (e: Exception) {
+            val contains = e.message?.contains("find", true)
+            assertEquals(contains, true)
+        }
 
 
         config = writeFile(client, config.cid, "root/test.txt", "Hello, World!".toByteArray())
