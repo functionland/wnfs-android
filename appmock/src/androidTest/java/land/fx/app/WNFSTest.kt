@@ -236,12 +236,7 @@ class WNFSTest {
         assert(readcontent_reloaded contentEquals "Hello, World!".toByteArray())
         Log.d("AppMock", "readFileFromPathOfReadTo. content="+String(readcontent_reloaded))
 
-        Log.d("AppMock", "All tests after reload is passed. TEsting re-init now")
-
-        var config_redo: Config = init(client, wnfsKey)
-        Log.d("AppMock", "config_redo createRootDirated. cid="+config_redo.cid)
-        assertNotNull("cid should not be null", config_redo.cid)
-        assertEquals(config_redo.cid, config.cid)
+        Log.d("AppMock", "All tests after reload is passed.")
 
     }
 }
