@@ -1,6 +1,7 @@
 name: Build the lib
 
 on:
+  workflow_dispatch:
   release:
     types: [published]
 
@@ -45,7 +46,7 @@ jobs:
       uses: reactivecircus/android-emulator-runner@v2
       with:
         profile: Galaxy Nexus
-        api-level: 26
+        api-level: 30
         script: ./gradlew appmock:connectedCheck
 
     - name: Upload test results
