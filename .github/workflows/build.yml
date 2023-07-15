@@ -1,6 +1,7 @@
 name: Build the lib
 
 on:
+  workflow_dispatch:
   release:
     types: [published]
 
