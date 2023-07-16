@@ -3,10 +3,12 @@ package land.fx.app
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.rule.ActivityTestRule
+import androidx.test.ext.junit.rules.ActivityScenarioRule
 import fulamobile.Fulamobile
 import land.fx.wnfslib.Fs.*
 import land.fx.wnfslib.Config
+import land.fx.wnfslib.result.*
+import land.fx.wnfslib.exceptions.*
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -14,21 +16,39 @@ import org.junit.runner.RunWith
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
+import java.util.UUID
 
 
 @RunWith(AndroidJUnit4::class)
 class WNFSTest {
+    fun logByteArray(tag: String, msg: String, byteArray: ByteArray) {
+        val message = byteArray.joinToString(", ") { it.toString() }
+        Log.d(tag, msg + message)
+    }
     class ConvertFulaClient(private val fulaClient: fulamobile.Client): land.fx.wnfslib.Datastore{
-        override fun put(data: ByteArray, codec: Long): ByteArray{
-            return fulaClient.put(data, codec)
+        fun logByteArray(tag: String, msg: String, byteArray: ByteArray) {
+            val message = byteArray.joinToString(", ") { it.toString() }
+            Log.d(tag, msg + message)
+        }
+
+        override fun put(cid: ByteArray, data: ByteArray): ByteArray{
+            logByteArray("FulaClient", "put in fulaClient data=", data)
+            logByteArray("FulaClient", "put in fulaClient cid=", cid)
+            val codec = cid[1].toLong() and 0xFF
+            Log.d("FulaClient", "put codec=" + codec)
+            val put_cid = fulaClient.put(data, codec)
+            logByteArray("FulaClient", "put in fulaClient returned put_cid=", put_cid)
+            return put_cid
         }
         override fun get(cid: ByteArray): ByteArray{
-
-            return fulaClient.get(cid)
+            logByteArray("FulaClient", "get in fulaClient cid=", cid)
+            val get_data = fulaClient.get(cid)
+            logByteArray("FulaClient", "get in fulaClient returned get_data=", get_data)
+            return get_data
         }
     }
     @get:Rule
-    val mainActivityRule = ActivityTestRule(MainActivity::class.java)
+    val mainActivityRule = ActivityScenarioRule(MainActivity::class.java)
     @Test
     fun wnfs_overall() {
         initRustLogger()
@@ -49,14 +69,15 @@ class WNFSTest {
         Log.d("AppMock", "creating newClient with storePath="+configExt.storePath+"; bloxAddr="+configExt.bloxAddr)
         val fulaClient = Fulamobile.newClient(configExt)
         val client = ConvertFulaClient(fulaClient)
+
         Log.d("AppMock", "client created with id="+fulaClient.id())
 
         val keyPhrase = ("test").toByteArray(StandardCharsets.UTF_8)
         val digest: MessageDigest = MessageDigest.getInstance("SHA-256");
         val wnfsKey: ByteArray = digest.digest(keyPhrase);
         
-        /* 
-        val sampleData = arrayOf<Int>(36, 212, 208, 119, 240, 231, 139, 103, 180, 43, 238, 192, 90, 25, 53, 111, 134, 254, 216, 237, 50, 10, 16, 85, 157, 154, 111, 204, 182, 200, 71, 44, 39, 18, 115, 1, 24, 175, 92, 3, 132, 226, 156, 7, 131, 220, 159, 77, 240, 190, 224, 11, 55, 203, 198, 194, 76, 39, 150, 181, 23, 232, 32, 23, 249, 162, 213, 93, 225, 191, 100, 168, 161, 234, 48, 232, 219, 38, 31, 230, 114, 53, 35, 10, 222, 212, 16, 92, 83, 157, 235, 202, 189, 48, 192, 165, 58, 70, 32, 142, 227, 151, 23, 175, 124, 41, 127, 145, 31, 167, 182, 205, 132, 151, 129, 58, 65, 136, 26, 32, 35, 221, 75, 76, 165, 128, 82, 219, 155, 216, 167, 219, 253, 155, 46, 130, 88, 44, 7, 143, 32, 111, 191, 238, 87, 40, 146, 46, 247, 135, 181, 29, 13, 38, 183, 251, 99, 190, 100, 234, 182, 121, 109, 253, 45, 54, 250, 94, 251, 158, 158, 144, 198, 253, 37, 111, 22, 87, 6, 166, 119, 123, 89, 230, 64, 90, 244, 205, 249, 168, 110, 51, 118, 60, 226, 102, 120, 129, 65, 3, 170, 172, 45, 119, 120, 62, 111, 55, 21, 91, 86, 53, 184, 253, 59, 41, 0, 90, 145, 41, 230, 109, 108, 46, 118, 225, 176, 221, 98, 221, 53, 92, 119, 254, 57, 163, 120, 179, 160, 74, 203, 104, 35, 188, 96, 153, 178, 122, 214, 30, 254, 19, 6, 33, 183, 14, 223, 7, 161, 171, 245, 21, 214, 1, 60, 79, 54, 202, 67, 145, 12, 240, 60, 210, 115, 217, 171, 175, 135, 33, 24, 138, 181, 63, 44, 4, 105, 76, 54, 230, 217, 81, 141, 209, 196, 129, 236, 18, 155, 246, 6, 138, 239, 8, 170, 10, 50, 233, 104, 50, 233, 58, 140, 16, 16, 213, 238, 95, 239, 227, 2, 108, 0, 215, 14, 84, 86, 82, 241, 50, 174, 1, 72, 132, 150, 3, 56, 177, 156, 254, 189, 7, 177, 2, 207, 107, 243, 234, 64, 42, 74, 245, 230, 240, 116, 193, 222, 29, 187, 239, 240, 185, 49, 27, 132, 169, 121, 86, 186, 10, 226, 150, 237, 154, 75, 173, 198, 20, 213, 215, 11, 29, 251, 140, 81, 249, 225, 148, 169, 197, 201, 180, 206, 252, 219, 130, 224, 152, 60, 252, 121, 236, 214, 107, 15, 172, 104, 17, 64, 99, 57, 253, 251, 114, 64, 196, 184, 36, 181, 208, 181, 80, 19, 143, 75, 250, 0, 55, 211, 135, 59, 126, 151, 11, 149, 59, 8, 248, 156, 45, 244, 62, 26, 53, 136, 197, 203, 99, 122, 225, 67, 116, 165, 254, 172, 29, 170, 116, 59, 214, 47, 213, 45, 60, 226, 209, 229, 98, 4, 37, 33, 156, 140, 243, 176, 23, 31, 149, 102, 89, 118, 126, 6, 66, 185, 188, 187, 241, 183, 187, 234, 132, 137, 28, 30, 1, 104, 151, 64, 238, 220, 139, 144, 22, 87, 215, 13, 90, 156, 79, 71, 39, 41, 123, 114, 128, 5, 223, 97, 14, 47, 3, 178, 15, 102, 52, 98, 127, 226, 163, 70, 237, 241, 83, 90, 172, 178, 66, 241, 123, 213, 104, 242, 47, 47, 2, 198, 194, 150, 123, 181, 86, 50, 86, 190, 48, 15, 60, 188, 77, 135, 1, 118, 134, 47, 230, 103, 16, 230, 120, 255, 85, 86, 101, 236, 35, 127, 147, 234, 226, 93, 174, 200, 185, 45, 36, 117, 13, 253, 151, 232, 80, 106, 5, 46, 167, 123, 234, 218, 182, 66, 183, 0, 120, 107, 251, 116, 80, 79, 212, 142, 160, 8, 217, 149, 161, 238, 219, 141, 127, 87, 180, 192, 40, 154, 31, 164, 184, 117, 158, 167, 210, 119, 219, 238, 166, 234, 84, 239, 128, 143, 140, 171, 171, 181, 108, 96, 215, 125, 161, 92, 179, 48, 222, 115, 25, 29, 27, 68, 240, 139, 149, 10, 215, 14, 185, 219, 10, 236, 112, 128, 68, 226, 17, 45, 100, 135, 232, 222, 36, 193, 233, 4, 51, 222, 61, 103, 108, 229, 177, 177, 205, 86, 82, 95, 185, 248, 115, 1, 215, 197, 123, 9, 155, 152, 37, 233, 212, 150, 163, 33, 188, 4, 99, 84, 45, 5, 199, 65, 188, 226, 87, 165, 35, 108, 180, 135, 159, 55, 242, 22, 21, 234, 194, 225, 246, 193, 218, 246, 2, 224, 2, 103, 50, 121, 105, 113, 159, 5, 238, 40, 223, 184, 61, 79, 215, 118, 216, 154, 112, 39, 27, 56, 233, 80, 218, 40, 204, 213, 14, 171, 220, 12, 62, 142, 213, 118, 23, 102, 122, 148, 194, 168, 62, 183, 250, 232, 134, 84, 49, 149, 102, 141, 144, 42, 134, 211, 44, 185, 136, 186, 172, 146, 215, 197, 76, 125, 172, 114, 115, 126, 42, 66, 1, 224, 222, 59, 49, 58, 22, 49, 132, 27, 1, 79, 158, 82, 20, 57, 120, 130, 114, 55, 141, 237, 39, 249, 6, 161, 98, 14, 151, 149, 243, 150, 179, 238, 232, 207, 214, 98, 179, 114, 22, 130, 72, 229, 17, 180, 156, 211, 211, 190, 244, 10, 20, 182, 30, 87, 18, 164, 101, 102, 28, 31, 236, 142, 239, 183, 25, 234, 166, 8, 230, 42, 94, 239, 73, 138, 186, 28, 88, 111, 233, 105, 66, 176, 88, 245, 249, 156, 41, 226, 44, 24, 114, 244, 193, 25, 182, 38, 155, 28, 24, 237, 62, 251, 254, 153, 2, 31, 244, 206, 230, 83, 122, 13, 77, 140, 27, 200, 247, 19, 24, 241, 169, 44, 252, 64, 106, 139, 131, 208, 42, 129, 249, 179, 134, 244, 225, 107, 219, 68, 126, 105, 179, 242, 140, 198, 77, 2, 255, 163, 222, 190, 2, 198, 200, 130, 245, 125, 238, 226, 149, 130, 106, 109, 176, 145, 18, 233, 156, 148, 174, 251, 224, 181, 68, 34, 94, 243, 1, 150, 98, 96, 63, 157, 128, 49, 230, 250, 97, 131, 48, 74, 125, 228, 88, 4, 213, 127, 201, 60, 17, 41, 246, 140, 35, 11, 172, 36, 118, 238, 162, 17, 22, 189, 188, 102, 83, 67, 242, 215, 78, 231, 232, 246, 202, 52, 49, 87, 119, 28, 14, 225, 28, 86, 45, 73, 190, 128, 196, 255, 106, 196, 63, 107, 122, 7, 14, 254, 7, 255, 245, 71, 193, 241, 138, 93, 74, 177, 165, 25, 8, 67, 3, 45, 113, 182, 203, 89, 179, 173, 156, 156, 248, 64, 233, 194, 67, 214, 62, 211, 236, 90, 183, 203, 183, 2, 95, 172, 84, 143, 26, 223, 48, 208, 151, 152, 110, 132, 88, 246, 62, 118, 95, 116, 116, 6, 228, 92, 6, 199, 70, 202, 147, 160, 177, 33, 30, 227, 107, 78, 45, 44, 99, 172, 69, 182, 189, 173, 160, 25, 98, 62, 177, 73, 83, 140, 196, 9, 174, 197, 71, 235, 128, 60, 148, 175, 30, 162, 180, 44, 165, 247, 65, 87, 169, 71, 178, 237, 25, 72, 191, 239, 222, 128, 184, 32, 214, 160, 95, 96, 85, 58, 110, 118, 179, 133, 110, 134, 29, 111, 199, 220, 90, 12, 83, 9, 12, 106, 124, 51, 149, 172, 146, 145, 32, 244, 15, 53, 218, 6, 117, 38, 4, 186, 43, 235, 202, 162, 134, 62, 44, 14, 31, 8, 49, 101, 169, 32, 101, 242, 58, 38, 34, 250, 65, 211, 46, 235, 12, 143, 76, 245, 89, 69, 193, 210, 99, 30, 57, 43, 227, 154, 248, 108, 187, 152, 7, 91, 122, 148, 211, 182, 147, 162, 117, 66, 126, 108, 144, 229, 101, 224, 188, 45, 174, 48, 21, 224, 10, 0, 36, 98, 243, 214, 186, 101, 71, 53, 46, 106, 95, 157, 179, 77, 192, 20, 74, 159, 223, 158, 185, 23)
+        /*
+        val sampleData = arrayOf<Int>(98, 59, -76, 96, 127, -7, 64, 73, 54, -102, 67, -108, -31, 23, -34, -43, -50, -104, -32, 71, 56, -39, 116, -28, 80, 27, -85, 93, 86, 5, -87, 119, -86, -78, 124, 52, 104, 72, 11, 8, 40, -22, -106, -1, 20, -109, -6, -70, -5, 3, 25, 89, 35, -23, -77, 73, 116, -1, -42, 39, -110, -49, -77, 71, 35, 71, 117, -19, -34, -43, -26, 90, 102, -68, 105, -13, 65, -121, -108, 18, -109, 99, -90, -111, 98, 81, 66, 19, 82, -18, 60, 0, 75, -120, 126, 76, -87, 105, -123, 0, 97, 9, 96, 86, -84, -62, 113, 92, -26, 121, -48, 40, 90, -97, -126, -114, -87, 116, 56, 29, -11, -79, -80, -62, 91, 112, -105, 38, 51, -81, -91, -95, 33, 109, -55, 41, -126, 87, -57, 90, -13, 109, 102, 78, -26, -94, 113, 62, 40, 65, -30, -109, 48, -85, 123, -21, 120, -10, -39, 62, -75, 108, -22, -111, 30, 115, 21, 57, -29, 23, -3, -39, -21, 70, 36, -77, -98, 33, -2, -4, 82, 46, 14, 85, -26, 108, -77, -128, -45, -79, -83, 110, -80, -77, 56, 66, -25, 83, -66, 64, -78, 27, -38, 124, -21, -32, -124, 90, -53, 36, -59, 36, 61, 116, -59, 96, 14, -109, -75, -97, -41, 111, 114, -111, -90, -1, 31, -74, 121, -96, 118, -52, -111, -122, -18, -51, 12, 110, -25, 103, -95, 120, 40, 63, 108, 117, 78, -108, 69, 72, 104, -90, -82, 14, 34, 120, 98, 11, 37, -42, 50, -123, -1, 53, 98, -111, 30, 78, 82, 68, -83, 124, -11, 47, -120, -107, 61, -22, -23, -117, -77, -38, -109, 88, -89, -124, -13, 68, 1, 125, -102, -20, 7, -119, 34, -73, -43, 18, -106, 108, -20, 106, -103, 11, 34, 52, -37, 49, -107, -36, -81, 90, 36, 102, 108, 2, 83, 69, -28, 123, 96, 85, 109, -108, 0, 1, 106, 99, 74, -26, -80, 65, -93, -30, 71, -93, 41, -110, -12, 41, -97, -57, -32, 52, -107, 23, -125, 71, -47, 110, -126, 54, 50, 43, 55, 12, -16, -18, -106, -82, -51, -88, 19, 89, 61, 74, -72, 4, -100, 57, -48, -106, -14, 26, -15, 63, -65, -22, 124, -77, -93, -20, -14, 117, 59, -96, 10, -43, 10, -83, 100, -15, -7, 11, 26, -63, -68, -35, -104, 83, 98, 113, 20, 62, 61, 63, 81, 93, 47, -30, -56, -53, -17, 126, 44, 44, -85, -13, 87, 88, 115, -85, 88, 11, -47, 67, -53, -63, -2, -19, -35, 126, -31, -72, -118, 71, 90, 99, -80, 53, -108, 47, -26, -122, 6, -74, 86, 27, 122, 85, 53, -34, -1, 107, -94, 13, -42, -7, -84, -23, 73, 2, -86, -76, -58, -88, 118, 114, -114, 2, 122, 117, 29, -111, 64, -43, 123, 115, 110, 88, -37, -54, -119, -123, -119, -47, -119, 53, -7, 9, 65, -117, -117, 20, -124, 48, -36, 71, 18, 82, 98, -117, 120, 11, 39, 30, -76, 34, -30, -66, 111, -27, -125, -37, 8, 81, -38, -11, -112, -14, 65, -7, 44, 107, -53, 114, -49, -127, -124, 1, -122, 1, 113, -39, 102, -36, 117, 104, -120, 27, 87, -94, -81, 123, -126, -43, 61, -50, 25, -91, -63, -4, -121, -127, -20, 83, -55, -35, 67, -68, -77, -93, 72, -44, -71, 15, 59, 63, 107, -21, 7, -96, -82, -47, -120, -120, -69, 116, 97, -97, 12, 44, 41, -31, -66, 119, 35, -97, 116, 17, -107, 67, -14, 106, -110, -94, -62, 89, 29, -86)
         val b = ByteArray(sampleData.size)
         for((index, element) in sampleData.withIndex()) {
             b[index] = element.toByte()
@@ -69,24 +90,23 @@ class WNFSTest {
         Log.d("AppMock", "get test was successful=$testData")
         */
 
-        val privateForest = createPrivateForest(client)
-        Log.d("AppMock", "privateForest created=$privateForest")
-        println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
-        println(privateForest)
-
-
-        var config = createRootDir(client, privateForest, wnfsKey)
-        Log.d("AppMock", "config crecreateRootDirated. cid="+config.cid+" & private_ref="+config.private_ref)
+        logByteArray("AppMock", "creating config with wnfsKey=", wnfsKey)
+        var config: Config = init(client, wnfsKey)
+        Log.d("AppMock", "config createRootDirated. cid="+config.cid)
         assertNotNull("cid should not be null", config.cid)
-        assertNotNull("private_ref should not be null", config.private_ref)
 
-        val fileNames_initial: ByteArray = ls(
-            client 
-            , "bafyreieqp253whdfdrky7hxpqezfwbkjhjdbxcq4mcbp6bqf4jdbncbx4y" 
-            , "{\"saturated_name_hash\":[229,31,96,28,24,238,207,22,36,150,191,37,235,68,191,144,219,250,5,97,85,208,156,134,137,74,25,209,6,66,250,127],\"content_key\":[172,199,245,151,207,21,26,76,52,109,93,57,118,232,9,230,149,46,37,137,174,42,119,29,102,175,25,149,213,204,45,15],\"revision_key\":[17,5,78,59,8,135,144,240,41,248,135,168,222,186,158,240,100,10,129,4,180,55,126,115,146,239,22,177,207,118,169,51]}"
-            , "root/"
-        )
-        Log.d("AppMock", "ls_initial. fileNames_initial="+String(fileNames_initial))
+        try {
+            val fileNames_initial: ByteArray = ls(
+                client 
+                , config.cid 
+                , "/" + UUID.randomUUID().toString()
+            )
+            Log.d("AppMock", "ls_initial. fileNames_initial="+String(fileNames_initial))
+        }  catch (e: Exception) {
+            val contains = e.message?.contains("find", true)
+            Log.d("AppMock", "ls_initial. error="+e.message)
+            assertEquals(contains, true)
+        }
 
         val testContent = "Hello, World!".toByteArray()
 
@@ -102,102 +122,146 @@ class WNFSTest {
         //assertTrue(isNewFileCreated)
         file.writeBytes(testContent)
 
+
+        //Create second test file for writestream
+        val testContent2 = "Hello, World2!".toByteArray()
+
+        val file2 = File(pathString, "test2.txt")
+        // create a new file
+        val isNewFileCreated2 = file2.createNewFile()
+
+        if(isNewFileCreated2){
+            Log.d("AppMock", pathString+"/test2.txt is created successfully.")
+        } else{
+            Log.d("AppMock", pathString+"/test2.txt already exists.")
+        }
+        //assertTrue(isNewFileCreated)
+        file2.writeBytes(testContent2)
+
 /* 
         try {
-            val config_err = writeFileFromPath(client, config.cid, config.private_ref, "root/testfrompath.txt", "file://"+pathString+"/test.txt")
+            val config_err = writeFileFromPath(client, config.cid, "root/testfrompath.txt", "file://"+pathString+"/test.txt")
             Log.d("AppMock", "config_err writeFile. config_err="+config_err)
         } catch (e: Exception) {
             assertNotNull("config should not be null", e)
             Log.d("AppMock", "config_err Error catched "+e.message);
         }
  */       
+        config = writeFileFromPath(client, config.cid, "/root/testfrompath.txt", pathString+"/test.txt") //target folder does not need to exist
+        Log.d("AppMock", "config writeFileFromPath. cid="+config.cid)
+        assertNotNull("config should not be null", config)
+        assertNotNull("cid should not be null", config.cid)
 
-        config = writeFileFromPath(client, config.cid, config.private_ref, "root/testfrompath.txt", pathString+"/test.txt") //target folder does not need to exist
-        Log.d("AppMock", "config writeFile. cid="+config.cid+" & private_ref="+config.private_ref)
+        config = writeFileStreamFromPath(client, config.cid, "/root/testfrompathstream.txt", pathString+"/test2.txt") //target folder does not need to exist
+        Log.d("AppMock", "config writeFileStreamFromPath. cid="+config.cid)
         assertNotNull("config should not be null", config)
         assertNotNull("cid should not be null", config.cid)
         
+        val fileNames_initial: ByteArray = ls(
+            client 
+            , config.cid 
+            , "/root"
+        )
+        Log.d("AppMock", "ls_initial. fileNames_initial="+String(fileNames_initial))
+        // assertNull(String(fileNames_initial))
 
-
-        val contentfrompath = readFile(client, config.cid, config.private_ref, "root/testfrompath.txt")
+        val contentfrompath = readFile(client, config.cid, "/root/testfrompath.txt")
         assert(contentfrompath contentEquals "Hello, World!".toByteArray())
-        Log.d("AppMock", "readFileFromPath. content="+contentfrompath.toString())
+        Log.d("AppMock", "readFile. content="+String(contentfrompath))
+
+        val contentfrompathstream = readFile(client, config.cid, "/root/testfrompathstream.txt")
+        assert(contentfrompathstream contentEquals "Hello, World2!".toByteArray())
+        Log.d("AppMock", "readFile from streamfile. content="+String(contentfrompathstream))
 
 
-        val contentfrompathtopath: String = readFileToPath(client, config.cid, config.private_ref, "root/testfrompath.txt", pathString+"/test2.txt")
+        val contentfrompathtopath: String = readFileToPath(client, config.cid, "root/testfrompath.txt", pathString+"/test2.txt")
         Log.d("AppMock", "contentfrompathtopath="+contentfrompathtopath)
         assertNotNull("contentfrompathtopath should not be null", contentfrompathtopath)
         val readcontent: ByteArray = File(contentfrompathtopath).readBytes()
         assert(readcontent contentEquals "Hello, World!".toByteArray())
         Log.d("AppMock", "readFileFromPathOfReadTo. content="+String(readcontent))
 
-        val contentstreamfrompathtopath: String = readFilestreamToPath(client, config.cid, config.private_ref, "root/testfrompath.txt", pathString+"/teststream.txt")
+        val contentstreamfrompathtopath: String = readFilestreamToPath(client, config.cid, "root/testfrompath.txt", pathString+"/teststream.txt")
         Log.d("AppMock", "contentstreamfrompathtopath="+contentstreamfrompathtopath)
         assertNotNull("contentstreamfrompathtopath should not be null", contentstreamfrompathtopath)
         val readcontentstream: ByteArray = File(contentstreamfrompathtopath).readBytes()
         assert(readcontentstream contentEquals "Hello, World!".toByteArray())
         Log.d("AppMock", "readFileFromPathOfReadstreamTo. content="+String(readcontentstream))
 
-        config = cp(client, config.cid, config.private_ref, "root/testfrompath.txt", "root/testfrompathcp.txt") //target folder must exists
-        val content_cp = readFile(client, config.cid, config.private_ref, "root/testfrompathcp.txt")
+        config = mkdir(client, config.cid, "opt")
+        Log.d("AppMock", "config mkdir. cid="+config.cid)
+        assertNotNull("config should not be null", config)
+        assertNotNull("cid should not be null", config.cid)
+
+        config = cp(client, config.cid, "root/testfrompath.txt", "opt/testfrompathcp.txt") //target folder must exists
+        val content_cp = readFile(client, config.cid, "opt/testfrompathcp.txt")
         Log.d("AppMock", "cp. content_cp="+String(content_cp))
         assert(content_cp contentEquals "Hello, World!".toByteArray())
 
-        config = mv(client, config.cid, config.private_ref, "root/testfrompath.txt", "root/testfrompathmv.txt") //target folder must exists
-        val content_mv = readFile(client, config.cid, config.private_ref, "root/testfrompathmv.txt")
+        config = mv(client, config.cid, "root/testfrompath.txt", "root/testfrompathmv.txt") //target folder must exists
+        val content_mv = readFile(client, config.cid, "root/testfrompathmv.txt")
         Log.d("AppMock", "mv. content_mv="+String(content_mv))
         assert(content_mv contentEquals "Hello, World!".toByteArray())
 
-        config = rm(client, config.cid, config.private_ref, "root/testfrompathmv.txt")
-        val content2 = readFile(client, config.cid, config.private_ref, "root/testfrompathmv.txt")
-        Log.d("AppMock", "rm. content="+String(content2))
-        assert(content2 contentEquals "".toByteArray())
+        config = rm(client, config.cid, "root/testfrompathmv.txt")
+        try {
+            readFile(client, config.cid, "root/testfrompathmv.txt")
+        } catch (e: Exception) {
+            val contains = e.message?.contains("find", true)
+            assertEquals(contains, true)
+        }
 
-        config = rm(client, config.cid, config.private_ref, "root/testfrompathcp.txt")
-        val content3 = readFile(client, config.cid, config.private_ref, "root/testfrompathcp.txt")
-        Log.d("AppMock", "rm. content="+String(content3))
-        assert(content3 contentEquals "".toByteArray())
+        config = rm(client, config.cid, "opt/testfrompathcp.txt")
+       try {
+            readFile(client, config.cid, "opt/testfrompathcp.txt")
+        } catch (e: Exception) {
+            val contains = e.message?.contains("find", true)
+            assertEquals(contains, true)
+        }
 
 
-        config = writeFile(client, config.cid, config.private_ref, "root/test.txt", "Hello, World!".toByteArray())
+        config = writeFile(client, config.cid, "root/test.txt", "Hello, World!".toByteArray())
         assertNotNull("cid should not be null", config.cid)
-        Log.d("AppMock", "config writeFile. cid="+config.cid+" & private_ref="+config.private_ref)
+        Log.d("AppMock", "config writeFile. cid="+config.cid)
 
-        config = mkdir(client,  config.cid, config.private_ref, "root/test1")
-        Log.d("AppMock", "config mkdir. cid="+config.cid+" & private_ref="+config.private_ref)
+        config = mkdir(client,  config.cid, "root/test1")
+        Log.d("AppMock", "config mkdir. cid="+config.cid)
 
-        val fileNames: ByteArray = ls(client, config.cid, config.private_ref, "root")
+        val fileNames: ByteArray = ls(client, config.cid, "root")
         Log.d("AppMock", "ls. fileNames="+String(fileNames))
         //assertEquals(fileNames, "[{\"name\":\"test.txt\",\"creation\":\"2022-12-17 00:36:02 UTC\",\"modification\":\"2022-12-17 00:36:02 UTC\"},{\"name\":\"test1\",\"creation\":\"\",\"modification\":\"]\"}]")
         
 
-        val content = readFile(client, config.cid, config.private_ref, "root/test.txt")
+        val content = readFile(client, config.cid, "root/test.txt")
         assert(content contentEquals "Hello, World!".toByteArray())
-        Log.d("AppMock", "readFile. content="+content.toString())
+        Log.d("AppMock", "readFile. content="+String(content))
 
         Log.d("AppMock", "All tests before reload passed")
 
-        Log.d("AppMock", "wnfs12 Testing reload with cid="+config.cid+" & wnfsKey="+wnfsKey.toString())
-        //Testing reload Directory
-        var private_ref_reload: String = getPrivateRef(client, wnfsKey, config.cid)
-        Log.d("AppMock", "wnfs12 original PrivateRef. private_ref="+config.private_ref)
-        Log.d("AppMock", "wnfs12 getPrivateRef. private_ref="+private_ref_reload)
-        assertNotNull("private_ref should not be null", private_ref_reload)
+        val fileNames_before_reloaded: ByteArray = ls(client, config.cid, "root")
+        Log.d("AppMock", "filenames_before_reloaded="+String(fileNames_before_reloaded))
 
-        val fileNames_reloaded: ByteArray = ls(client, config.cid, private_ref_reload, "root")
-        //assertEquals(fileNames_reloaded, "test.txt\ntest1")
+        Log.d("AppMock", "wnfs12 Testing reload with cid="+config.cid+" & wnfsKey="+wnfsKey)
+        //Testing reload Directory
+        loadWithWNFSKey(client, wnfsKey, config.cid)
+
+        val fileNames_reloaded: ByteArray = ls(client, config.cid, "root")
+        Log.d("AppMock", "filenames_reloaded="+String(fileNames_reloaded))
+        assertEquals(String(fileNames_reloaded), String(fileNames_before_reloaded))
         
 
-        val content_reloaded = readFile(client, config.cid, private_ref_reload, "root/test.txt")
-        Log.d("AppMock", "readFile. content="+content_reloaded.toString())
+        val content_reloaded = readFile(client, config.cid, "root/test.txt")
+        Log.d("AppMock", "readFile. content="+String(content_reloaded))
         assert(content_reloaded contentEquals "Hello, World!".toByteArray())
 
-        val contentfrompathtopath_reloaded: String = readFileToPath(client, config.cid, private_ref_reload, "root/test.txt", pathString+"/test2.txt")
+        val contentfrompathtopath_reloaded: String = readFileToPath(client, config.cid, "root/test.txt", pathString+"/test2.txt")
         Log.d("AppMock", "contentfrompathtopath_reloaded="+contentfrompathtopath_reloaded)
         assertNotNull("contentfrompathtopath_reloaded should not be null", contentfrompathtopath_reloaded)
         val readcontent_reloaded: ByteArray = File(contentfrompathtopath_reloaded).readBytes()
         assert(readcontent_reloaded contentEquals "Hello, World!".toByteArray())
-        Log.d("AppMock", "readFileFromPathOfReadTo. content="+readcontent_reloaded.toString())
+        Log.d("AppMock", "readFileFromPathOfReadTo. content="+String(readcontent_reloaded))
+
+        Log.d("AppMock", "All tests after reload is passed.")
 
     }
 }
