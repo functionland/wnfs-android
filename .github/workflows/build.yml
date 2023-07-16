@@ -42,6 +42,7 @@ jobs:
     - name: Build
       run: ./gradlew lib:assemble
 
+
     #- name: Instrumentation Tests
     #  uses: reactivecircus/android-emulator-runner@v2
     #  with:
