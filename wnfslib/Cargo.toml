@@ -1,6 +1,6 @@
 [package]
 name = "wnfslib-android"
-version = "1.7.2"
+version = "1.7.3"
 edition = "2021"
 
 [lib]
@@ -9,7 +9,7 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 wnfs = {git= "https://github.com/wnfs-wg/rs-wnfs.git", tag="wnfs-v0.1.22"}
-wnfsutils = { git = "https://github.com/functionland/wnfs-utils.git", tag = "0.1.22" }
+wnfsutils = { git = "https://github.com/functionland/wnfs-utils.git", tag = "v1.0.4" }
 libipld = { version = "0.16", features = ["dag-cbor", "derive", "serde-codec"] }
 anyhow = "1.0.66"
 serde = "1.0.149"

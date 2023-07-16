@@ -224,6 +224,57 @@ pub mod android {
     }
 
     #[no_mangle]
+    pub extern "C" fn Java_land_fx_wnfslib_Fs_writeFileStreamFromPathNative(
+        env: JNIEnv,
+        _: JClass,
+        jni_fula_client: JObject,
+        jni_cid: JString,
+        
+        jni_path_segments: JString,
+        jni_filename: JString,
+    ) -> jobject {
+        trace!("**********************writeFileStreamFromPathNative started**************");
+        let store = JNIStore::new(env, jni_fula_client);
+        let block_store = &mut FFIFriendlyBlockStore::new(Box::new(store));
+        let cid = deserialize_cid(env, jni_cid);
+        let helper_res = PrivateDirectoryHelper::synced_reload(block_store, cid);
+
+        if helper_res.is_ok() {
+            let helper =&mut helper_res.ok().unwrap();
+                let path_segments = prepare_path_segments(env, jni_path_segments);
+
+                let filename: String = env
+                    .get_string(jni_filename)
+                    .expect("Failed to parse input path segments")
+                    .into();
+
+                let write_file_result = 
+                    helper.synced_write_file_stream_from_path(&path_segments, &filename);
+                    trace!("**********************writeFileStreamFromPathNative finished**************");
+                if write_file_result.is_ok() {
+                    let cid = write_file_result.ok().unwrap();
+                    unsafe{
+                        return serialize_config_result(env, None, Some(cid));
+                    }
+                } else {
+                    let msg = write_file_result.err().unwrap();
+                    trace!("wnfsError in Java_land_fx_wnfslib_Fs_writeFileStreamFromPathNative: {:?}", msg);
+                    unsafe{
+                        return serialize_config_result(env, Some(msg), None);
+                    }
+                }
+
+        } else {
+            let msg = &mut helper_res.err().unwrap();
+            trace!("wnfsError in Java_land_fx_wnfslib_Fs_writeFileStreamFromPathNative: {:?}", msg.to_owned());
+            unsafe{
+                return serialize_config_result(env, Some(msg.to_owned()), None);
+            }
+        }
+        
+    }
+
+    #[no_mangle]
     pub extern "C" fn Java_land_fx_wnfslib_Fs_readFilestreamToPathNative(
         env: JNIEnv,
         _: JClass,

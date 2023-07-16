@@ -22,6 +22,8 @@ public final class Fs {
 
     private static native ConfigResult writeFileFromPathNative(Datastore datastore, String cid, String path, String filename);
 
+    private static native ConfigResult writeFileStreamFromPathNative(Datastore datastore, String cid, String path, String filename);
+
     private static native ConfigResult writeFileNative(Datastore datastore, String cid, String path, byte[] content);
 
     private static native BytesResult lsNative(Datastore datastore, String cid, String path);
@@ -78,6 +80,21 @@ public final class Fs {
                 return res.getResult();
             } else {
                 throw new WnfsException("Fs.writeFileFromPath", res.getReason());
+            }
+        } 
+        catch(Exception e) {
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    @NonNull
+    public static Config writeFileStreamFromPath(Datastore datastore, String cid, String path, String filename) throws Exception {
+        try {
+            ConfigResult res = writeFileStreamFromPathNative(datastore, cid, path, filename);
+            if(res != null && res.ok()) {
+                return res.getResult();
+            } else {
+                throw new WnfsException("Fs.writeFileStreamFromPath", res.getReason());
             }
         } 
         catch(Exception e) {

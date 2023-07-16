@@ -122,6 +122,22 @@ class WNFSTest {
         //assertTrue(isNewFileCreated)
         file.writeBytes(testContent)
 
+
+        //Create second test file for writestream
+        val testContent2 = "Hello, World2!".toByteArray()
+
+        val file2 = File(pathString, "test2.txt")
+        // create a new file
+        val isNewFileCreated2 = file2.createNewFile()
+
+        if(isNewFileCreated2){
+            Log.d("AppMock", pathString+"/test2.txt is created successfully.")
+        } else{
+            Log.d("AppMock", pathString+"/test2.txt already exists.")
+        }
+        //assertTrue(isNewFileCreated)
+        file2.writeBytes(testContent2)
+
 /* 
         try {
             val config_err = writeFileFromPath(client, config.cid, "root/testfrompath.txt", "file://"+pathString+"/test.txt")
@@ -132,7 +148,12 @@ class WNFSTest {
         }
  */       
         config = writeFileFromPath(client, config.cid, "/root/testfrompath.txt", pathString+"/test.txt") //target folder does not need to exist
-        Log.d("AppMock", "config writeFile. cid="+config.cid)
+        Log.d("AppMock", "config writeFileFromPath. cid="+config.cid)
+        assertNotNull("config should not be null", config)
+        assertNotNull("cid should not be null", config.cid)
+
+        config = writeFileStreamFromPath(client, config.cid, "/root/testfrompathstream.txt", pathString+"/test2.txt") //target folder does not need to exist
+        Log.d("AppMock", "config writeFileStreamFromPath. cid="+config.cid)
         assertNotNull("config should not be null", config)
         assertNotNull("cid should not be null", config.cid)
         
@@ -146,7 +167,11 @@ class WNFSTest {
 
         val contentfrompath = readFile(client, config.cid, "/root/testfrompath.txt")
         assert(contentfrompath contentEquals "Hello, World!".toByteArray())
-        Log.d("AppMock", "readFileFromPath. content="+String(contentfrompath))
+        Log.d("AppMock", "readFile. content="+String(contentfrompath))
+
+        val contentfrompathstream = readFile(client, config.cid, "/root/testfrompathstream.txt")
+        assert(contentfrompathstream contentEquals "Hello, World2!".toByteArray())
+        Log.d("AppMock", "readFile from streamfile. content="+String(contentfrompathstream))
 
 
         val contentfrompathtopath: String = readFileToPath(client, config.cid, "root/testfrompath.txt", pathString+"/test2.txt")
