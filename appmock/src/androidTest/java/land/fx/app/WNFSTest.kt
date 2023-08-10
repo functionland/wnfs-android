@@ -152,7 +152,7 @@ class WNFSTest {
             val fileNames_initial: ByteArray = ls(
                 client 
                 , config.cid 
-                , "/" + UUID.randomUUID().toString()
+                , UUID.randomUUID().toString()
             )
             Log.d("AppMock", "ls_initial. fileNames_initial="+String(fileNames_initial))
         }  catch (e: Exception) {
@@ -247,12 +247,14 @@ class WNFSTest {
         Log.d("AppMock", "cp. content_cp="+String(content_cp))
         assert(content_cp contentEquals "Hello, World!".toByteArray())
         Log.d("AppMock", "config cp_opt. cid="+config.cid)
+ 
+        config = mv(client, config.cid, "opt/testfrompathcp.txt", "root/testfrompathmv.txt") //target folder must exists
+        Log.d("AppMock", "config mv_root. cid="+config.cid)
 
-        config = mv(client, config.cid, "root/testfrompath.txt", "root/testfrompathmv.txt") //target folder must exists
         val content_mv = readFile(client, config.cid, "root/testfrompathmv.txt")
         Log.d("AppMock", "mv. content_mv="+String(content_mv))
         assert(content_mv contentEquals "Hello, World!".toByteArray())
-        Log.d("AppMock", "config mv_root. cid="+config.cid)
+        
 
         config = rm(client, config.cid, "root/testfrompathmv.txt")
         try {
@@ -261,6 +263,7 @@ class WNFSTest {
             val contains = e.message?.contains("find", true)
             assertEquals(contains, true)
         }
+        Log.d("AppMock", "config rm_testfrompathmv. cid="+config.cid)
 
         config = rm(client, config.cid, "opt/testfrompathcp.txt")
        try {
@@ -269,13 +272,14 @@ class WNFSTest {
             val contains = e.message?.contains("find", true)
             assertEquals(contains, true)
         }
+        Log.d("AppMock", "config rm_dummy_1_shoud not change. cid="+config.cid)
 
 
         config = writeFile(client, config.cid, "root/test.txt", "Hello, World!".toByteArray())
         assertNotNull("cid should not be null", config.cid)
         Log.d("AppMock", "config writeFile. cid="+config.cid)
 
-        config = mkdir(client,  config.cid, "test1")
+        config = mkdir(client,  config.cid, "root/test1")
         Log.d("AppMock", "config mkdir_test1. cid="+config.cid)
 
         val fileNames: ByteArray = ls(client, config.cid, "root")
@@ -322,12 +326,13 @@ class WNFSTest {
         Log.d("AppMock", "readFile. content="+String(content_reloaded))
         assert(content_reloaded contentEquals "Hello, World!".toByteArray())
 
-        val contentfrompathtopath_reloaded: String = readFileToPath(client, config.cid, "root/test.txt", pathString+"/test2.txt")
+        val contentfrompathtopath_reloaded: String = readFileToPath(client, config.cid, "root/test_reloaded.txt", pathString+"/test2.txt")
         Log.d("AppMock", "contentfrompathtopath_reloaded="+contentfrompathtopath_reloaded)
         assertNotNull("contentfrompathtopath_reloaded should not be null", contentfrompathtopath_reloaded)
         val readcontent_reloaded: ByteArray = File(contentfrompathtopath_reloaded).readBytes()
-        assert(readcontent_reloaded contentEquals "Hello, World!".toByteArray())
-        Log.d("AppMock", "readFileFromPathOfReadTo. content="+String(readcontent_reloaded))
+        val content_reloaded2 = readFile(client, config.cid, "root/test_reloaded.txt")
+        assert(readcontent_reloaded contentEquals content_reloaded2)
+        Log.d("AppMock", "readFileFromPathOfReadTo. content="+String(content_reloaded2))
 
         Log.d("AppMock", "All tests after reload is passed.")
 
