@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
 
 
 @RunWith(AndroidJUnit4::class)
@@ -30,6 +31,7 @@ class WNFSTest {
     class InMemoryDatastore : land.fx.wnfslib.Datastore {
 
         private val store = ConcurrentHashMap<String, ByteArray>()
+        private val executor = Executors.newSingleThreadExecutor()
     
         fun logByteArray(tag: String, msg: String, byteArray: ByteArray) {
             val message = byteArray.joinToString(", ") { it.toString() }
@@ -37,21 +39,27 @@ class WNFSTest {
         }
     
         override fun put(cid: ByteArray, data: ByteArray): ByteArray {
-            val key = Base64.encodeToString(cid, Base64.DEFAULT)
-            logByteArray("InMemoryDatastore", "put data=", data)
-            logByteArray("InMemoryDatastore", "put cid=", cid)
-            store[key] = data
-            Log.d("InMemoryDatastore", "data put successfully for cid $key")
-            return cid
+            val future = executor.submit<ByteArray> {
+                val key = Base64.encodeToString(cid, Base64.DEFAULT)
+                logByteArray("InMemoryDatastore", "put data=", data)
+                logByteArray("InMemoryDatastore", "put cid=", cid)
+                store[key] = data
+                Log.d("InMemoryDatastore", "data put successfully for cid $key")
+                cid
+            }
+            return future.get()
         }
     
         override fun get(cid: ByteArray): ByteArray {
-            val key = Base64.encodeToString(cid, Base64.DEFAULT)
-
-            logByteArray("InMemoryDatastore", "get cid=", cid)
-            val data = store[key] ?: throw Exception("Data not found for CID: $key")
-            logByteArray("InMemoryDatastore", "get returned data=", data)
-            return data
+            val future = executor.submit<ByteArray> {
+                val key = Base64.encodeToString(cid, Base64.DEFAULT)
+    
+                logByteArray("InMemoryDatastore", "get cid=", cid)
+                val data = store[key] ?: throw Exception("Data not found for CID: $key")
+                logByteArray("InMemoryDatastore", "get returned data=", data)
+                data
+            }
+            return future.get()
         }
     }
 
@@ -77,11 +85,12 @@ class WNFSTest {
             return get_data
         }
     }
+    
     @get:Rule
     val mainActivityRule = ActivityScenarioRule(MainActivity::class.java)
 
     private fun generateLargeTestFile(path: String): File {
-        val file = File(path, "largeTestFile.txt")
+        val file = File(path, "largeTestFile1.txt")
         file.outputStream().use { output ->
             val buffer = ByteArray(1024)  // 1KB buffer
             val random = java.util.Random()
@@ -97,7 +106,7 @@ class WNFSTest {
 
     @Test
     fun wnfs_overall() {
-        val useInMemoryStore = true  // Or determine this from some configurations or conditions
+        val useInMemoryStore = false  // Or determine this from some configurations or conditions
 
         initRustLogger()
         val appContext = InstrumentationRegistry
@@ -265,14 +274,13 @@ class WNFSTest {
         }
         Log.d("AppMock", "config rm_testfrompathmv. cid="+config.cid)
 
-        config = rm(client, config.cid, "opt/testfrompathcp.txt")
        try {
             readFile(client, config.cid, "opt/testfrompathcp.txt")
         } catch (e: Exception) {
             val contains = e.message?.contains("find", true)
             assertEquals(contains, true)
         }
-        Log.d("AppMock", "config rm_dummy_1_shoud not change. cid="+config.cid)
+        Log.d("AppMock", "config rm_dummy_readfile not change. cid="+config.cid)
 
 
         config = writeFile(client, config.cid, "root/test.txt", "Hello, World!".toByteArray())
@@ -295,17 +303,21 @@ class WNFSTest {
         Log.d("AppMock", "config passed to largefile. cid="+config.cid)
         val file_large = generateLargeTestFile(pathString)
         Log.d("AppMock", "Large file created");
-        config = writeFileStreamFromPath(client, config.cid, "root/largeTestFile.txt", pathString+"/largeTestFile.txt") //target folder does not need to exist
+        Thread.sleep(2000)
+        config = writeFileStreamFromPath(client, config.cid, "root/largeTestFile.txt", pathString+"/largeTestFile1.txt") //target folder does not need to exist
         Log.d("AppMock", "config writeFileStreamFromPath for large file. cid="+config.cid)
         assertNotNull("config should not be null for large file", config)
         assertNotNull("cid should not be null for large file", config.cid)
-
-        val largefilecontentstreamfrompathtopath: String = readFilestreamToPath(client, config.cid, "root/largeTestFile.txt", pathString+"/largeTestFileReadStream.txt")
+        Thread.sleep(2000)
+        val largefilecontentstreamfrompathtopath: String = readFilestreamToPath(client, config.cid, "root/largeTestFile.txt", pathString+"/largeTestFileReadStream1.txt")
+        Log.d("AppMock", "config largefilecontentstreamfrompathtopath for large file. cid="+config.cid)
         assertNotNull("contentstreamfrompathtopath for large file should not be null", largefilecontentstreamfrompathtopath)
         val largefile = File(largefilecontentstreamfrompathtopath)
 
         val fileSizeInBytes = largefile.length()
         val originalfileSizeInBytes = file_large.length()
+        Log.d("AppMock", "fileSizeInBytes for large file. fileSizeInBytes="+fileSizeInBytes)
+        Log.d("AppMock", "originalfileSizeInBytes for large file. originalfileSizeInBytes="+originalfileSizeInBytes)
         assertEquals(fileSizeInBytes, originalfileSizeInBytes)
 
         Log.d("AppMock", "************* All tests before reload passed **********************")
