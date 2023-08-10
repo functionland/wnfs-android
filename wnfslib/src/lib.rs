@@ -34,9 +34,7 @@ pub mod android {
     impl<'a> FFIStore<'a> for JNIStore<'a> {
         /// Retrieves an array of bytes from the block store with given CID.
         fn get_block(&self, cid: Vec<u8>) -> Result<Vec<u8>> {
-            trace!("**********************get_block started**************");
-            trace!("**********************get_block started**************");
-            trace!("**********************get_block bytes={:?}", &cid);
+            trace!("*AppMock *********************get_block bytes={:?}", &cid);
             let get_fn = self
                 .env
                 .get_method_id(self.fula_client, "get", "([B)[B")
@@ -57,33 +55,19 @@ pub mod android {
                 .unwrap();
 
             let data = jbyte_array_to_vec(self.env, data_jbyte_array.into_inner());
-            trace!("**********************get_block finished**************");
             Ok(data)
         
         }
 
         /// Stores an array of bytes in the block store.
         fn put_block(&self, cid: Vec<u8>, bytes: Vec<u8>) -> Result<()> {
-            trace!("**********************put_block started**************");
-            trace!("**********************put_block cid={:?}", &cid);
-            trace!("**********************put_block bytes={:?}", &bytes);
+            trace!("AppMock **********************put_block cid={:?}", &cid);
             let put_fn = self
                 .env
                 .get_method_id(self.fula_client, "put", "([B[B)[B")
                 .unwrap();
-            trace!("**********************put_block put_fn done**************");
             let data_jbyte_array = vec_to_jbyte_array(self.env, bytes);
-            trace!("**********************put_block data_jbyte_array done**************");
-            trace!(
-                "**********************put_block LVALUE_data_jbyte_array={:?}",
-                &JValue::from(data_jbyte_array)
-            );
             let cid_jbyte_array = vec_to_jbyte_array(self.env, cid);
-            trace!("**********************put_block cid_jbyte_array done**************");
-            trace!(
-                "**********************put_block LVALUE_cid_jbyte_array={:?}",
-                &JValue::from(cid_jbyte_array)
-            );
 
             let cid_jbyte_array = self
                 .env
@@ -94,17 +78,13 @@ pub mod android {
                     &[JValue::from(cid_jbyte_array), JValue::from(data_jbyte_array)],
                 )
                 .unwrap_or_else(|_err: jni::errors::Error| {
-                    trace!("**********************put_block first unwrap error**************");
                     panic!("HERE1: {}", _err)
                 })
                 .l()
                 .unwrap_or_else(|_err: jni::errors::Error| {
-                    trace!("**********************put_block second unwrap error**************");
                     panic!("HERE2: {}", _err)
                 });
-            trace!("**********************put_block cid_jbyte_array done**************");
             let _ = jbyte_array_to_vec(self.env, cid_jbyte_array.into_inner());
-            trace!("**********************put_block finished**************");
             Ok(())
             
         }
