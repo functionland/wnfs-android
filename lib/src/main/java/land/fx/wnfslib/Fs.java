@@ -94,7 +94,7 @@ public final class Fs {
             if(res != null && res.ok()) {
                 return res.getResult();
             } else {
-                throw new WnfsException("Fs.writeFileStreamFromPath", res.getReason());
+                throw new WnfsException("Fs.writeFileStreamFromPath for cid="+cid, res.getReason());
             }
         } 
         catch(Exception e) {
@@ -127,7 +127,7 @@ public final class Fs {
             if(res != null && res.ok()) {
                 return res.getResult();
             } else {
-                throw new WnfsException("Fs.ls", res.getReason());
+                throw new WnfsException("Fs.ls for cid="+cid, res.getReason());
             }
             /*JSONArray output = new JSONArray();
             byte[] rowSeparatorPattern = {33, 33, 33}; //!!!
@@ -170,7 +170,7 @@ public final class Fs {
             if(res != null && res.ok()) {
                 return res.getResult();
             } else {
-                throw new WnfsException("Fs.mkdir", res.getReason());
+                throw new WnfsException("Fs.mkdir for cid="+cid, res.getReason());
             }
         } 
         catch(Exception e) {
@@ -245,7 +245,7 @@ public final class Fs {
             if(res != null && res.ok()) {
                 return res.getResult();
             } else {
-                throw new WnfsException("Fs.readFilestreamToPathNative", res.getReason());
+                throw new WnfsException("Fs.readFilestreamToPathNative for "+cid, res.getReason());
             }
         }
         catch(Exception e) {
@@ -259,7 +259,7 @@ public final class Fs {
             if(res != null && res.ok()) {
                 return res.getResult();
             } else {
-                throw new WnfsException("Fs.readFileNative", res.getReason());
+                throw new WnfsException("Fs.readFileNative for cid="+cid, res.getReason());
             }
         }
         catch(Exception e) {

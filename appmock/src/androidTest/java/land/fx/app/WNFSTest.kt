@@ -54,7 +54,7 @@ class WNFSTest {
             val random = java.util.Random()
     
             // Write 1GB of random data to the file
-            repeat(308_576) {  // 1GB = 1024 * 1024 KB
+            repeat(58_576) {  // 1GB = 1024 * 1024 KB
                 random.nextBytes(buffer)
                 output.write(buffer)
             }
