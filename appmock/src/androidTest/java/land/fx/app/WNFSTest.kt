@@ -49,6 +49,22 @@ class WNFSTest {
     }
     @get:Rule
     val mainActivityRule = ActivityScenarioRule(MainActivity::class.java)
+
+    private fun generateLargeTestFile(path: String): File {
+        val file = File(path, "largeTestFile.txt")
+        file.outputStream().use { output ->
+            val buffer = ByteArray(1024)  // 1KB buffer
+            val random = java.util.Random()
+    
+            // Write 1GB of random data to the file
+            repeat(58_576) {  // 1GB = 1024 * 1024 KB
+                random.nextBytes(buffer)
+                output.write(buffer)
+            }
+        }
+        return file
+    }
+
     @Test
     fun wnfs_overall() {
         initRustLogger()
@@ -104,7 +120,7 @@ class WNFSTest {
             Log.d("AppMock", "ls_initial. fileNames_initial="+String(fileNames_initial))
         }  catch (e: Exception) {
             val contains = e.message?.contains("find", true)
-            Log.d("AppMock", "ls_initial. error="+e.message)
+            Log.d("AppMock", "ls_initial_error. error="+e.message)
             assertEquals(contains, true)
         }
 
@@ -138,21 +154,17 @@ class WNFSTest {
         //assertTrue(isNewFileCreated)
         file2.writeBytes(testContent2)
 
-/* 
-        try {
-            val config_err = writeFileFromPath(client, config.cid, "root/testfrompath.txt", "file://"+pathString+"/test.txt")
-            Log.d("AppMock", "config_err writeFile. config_err="+config_err)
-        } catch (e: Exception) {
-            assertNotNull("config should not be null", e)
-            Log.d("AppMock", "config_err Error catched "+e.message);
-        }
- */       
-        config = writeFileFromPath(client, config.cid, "/root/testfrompath.txt", pathString+"/test.txt") //target folder does not need to exist
+        config = mkdir(client, config.cid, "root")
+        Log.d("AppMock", "config mkdir_root. cid="+config.cid)
+        assertNotNull("config mkdir_root should not be null", config)
+        assertNotNull("cid mkdir_root should not be null", config.cid)
+
+        config = writeFileFromPath(client, config.cid, "root/testfrompath.txt", pathString+"/test.txt") //target folder does not need to exist
         Log.d("AppMock", "config writeFileFromPath. cid="+config.cid)
         assertNotNull("config should not be null", config)
         assertNotNull("cid should not be null", config.cid)
 
-        config = writeFileStreamFromPath(client, config.cid, "/root/testfrompathstream.txt", pathString+"/test2.txt") //target folder does not need to exist
+        config = writeFileStreamFromPath(client, config.cid, "root/testfrompathstream.txt", pathString+"/test2.txt") //target folder does not need to exist
         Log.d("AppMock", "config writeFileStreamFromPath. cid="+config.cid)
         assertNotNull("config should not be null", config)
         assertNotNull("cid should not be null", config.cid)
@@ -160,16 +172,16 @@ class WNFSTest {
         val fileNames_initial: ByteArray = ls(
             client 
             , config.cid 
-            , "/root"
+            , "root"
         )
         Log.d("AppMock", "ls_initial. fileNames_initial="+String(fileNames_initial))
         // assertNull(String(fileNames_initial))
 
-        val contentfrompath = readFile(client, config.cid, "/root/testfrompath.txt")
+        val contentfrompath = readFile(client, config.cid, "root/testfrompath.txt")
         assert(contentfrompath contentEquals "Hello, World!".toByteArray())
         Log.d("AppMock", "readFile. content="+String(contentfrompath))
 
-        val contentfrompathstream = readFile(client, config.cid, "/root/testfrompathstream.txt")
+        val contentfrompathstream = readFile(client, config.cid, "root/testfrompathstream.txt")
         assert(contentfrompathstream contentEquals "Hello, World2!".toByteArray())
         Log.d("AppMock", "readFile from streamfile. content="+String(contentfrompathstream))
 
@@ -189,7 +201,7 @@ class WNFSTest {
         Log.d("AppMock", "readFileFromPathOfReadstreamTo. content="+String(readcontentstream))
 
         config = mkdir(client, config.cid, "opt")
-        Log.d("AppMock", "config mkdir. cid="+config.cid)
+        Log.d("AppMock", "config mkdir_opt. cid="+config.cid)
         assertNotNull("config should not be null", config)
         assertNotNull("cid should not be null", config.cid)
 
@@ -224,8 +236,8 @@ class WNFSTest {
         assertNotNull("cid should not be null", config.cid)
         Log.d("AppMock", "config writeFile. cid="+config.cid)
 
-        config = mkdir(client,  config.cid, "root/test1")
-        Log.d("AppMock", "config mkdir. cid="+config.cid)
+        config = mkdir(client,  config.cid, "test1")
+        Log.d("AppMock", "config mkdir_test1. cid="+config.cid)
 
         val fileNames: ByteArray = ls(client, config.cid, "root")
         Log.d("AppMock", "ls. fileNames="+String(fileNames))
@@ -236,7 +248,24 @@ class WNFSTest {
         assert(content contentEquals "Hello, World!".toByteArray())
         Log.d("AppMock", "readFile. content="+String(content))
 
-        Log.d("AppMock", "All tests before reload passed")
+        Log.d("AppMock", "****************** Teting large file write and read *******************")
+        Log.d("AppMock", "config passed to largefile. cid="+config.cid)
+        val file_large = generateLargeTestFile(pathString)
+        Log.d("AppMock", "Large file created");
+        config = writeFileStreamFromPath(client, config.cid, "root/largeTestFile.txt", pathString+"/largeTestFile.txt") //target folder does not need to exist
+        Log.d("AppMock", "config writeFileStreamFromPath for large file. cid="+config.cid)
+        assertNotNull("config should not be null for large file", config)
+        assertNotNull("cid should not be null for large file", config.cid)
+
+        val largefilecontentstreamfrompathtopath: String = readFilestreamToPath(client, config.cid, "root/largeTestFile.txt", pathString+"/largeTestFileReadStream.txt")
+        assertNotNull("contentstreamfrompathtopath for large file should not be null", largefilecontentstreamfrompathtopath)
+        val largefile = File(largefilecontentstreamfrompathtopath)
+
+        val fileSizeInBytes = largefile.length()
+        val originalfileSizeInBytes = file_large.length()
+        assertEquals(fileSizeInBytes, originalfileSizeInBytes)
+
+        Log.d("AppMock", "************* All tests before reload passed **********************")
 
         val fileNames_before_reloaded: ByteArray = ls(client, config.cid, "root")
         Log.d("AppMock", "filenames_before_reloaded="+String(fileNames_before_reloaded))
