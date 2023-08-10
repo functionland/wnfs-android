@@ -1,6 +1,7 @@
 package land.fx.app
 
 import android.util.Log
+import android.util.Base64
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.rules.ActivityScenarioRule
@@ -17,6 +18,7 @@ import java.io.File
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 
 @RunWith(AndroidJUnit4::class)
@@ -25,6 +27,34 @@ class WNFSTest {
         val message = byteArray.joinToString(", ") { it.toString() }
         Log.d(tag, msg + message)
     }
+    class InMemoryDatastore : land.fx.wnfslib.Datastore {
+
+        private val store = ConcurrentHashMap<String, ByteArray>()
+    
+        fun logByteArray(tag: String, msg: String, byteArray: ByteArray) {
+            val message = byteArray.joinToString(", ") { it.toString() }
+            Log.d(tag, msg + message)
+        }
+    
+        override fun put(cid: ByteArray, data: ByteArray): ByteArray {
+            val key = Base64.encodeToString(cid, Base64.DEFAULT)
+            logByteArray("InMemoryDatastore", "put data=", data)
+            logByteArray("InMemoryDatastore", "put cid=", cid)
+            store[key] = data
+            Log.d("InMemoryDatastore", "data put successfully for cid $key")
+            return cid
+        }
+    
+        override fun get(cid: ByteArray): ByteArray {
+            val key = Base64.encodeToString(cid, Base64.DEFAULT)
+
+            logByteArray("InMemoryDatastore", "get cid=", cid)
+            val data = store[key] ?: throw Exception("Data not found for CID: $key")
+            logByteArray("InMemoryDatastore", "get returned data=", data)
+            return data
+        }
+    }
+
     class ConvertFulaClient(private val fulaClient: fulamobile.Client): land.fx.wnfslib.Datastore{
         fun logByteArray(tag: String, msg: String, byteArray: ByteArray) {
             val message = byteArray.joinToString(", ") { it.toString() }
@@ -67,6 +97,8 @@ class WNFSTest {
 
     @Test
     fun wnfs_overall() {
+        val useInMemoryStore = true  // Or determine this from some configurations or conditions
+
         initRustLogger()
         val appContext = InstrumentationRegistry
             .getInstrumentation()
@@ -84,7 +116,12 @@ class WNFSTest {
 
         Log.d("AppMock", "creating newClient with storePath="+configExt.storePath+"; bloxAddr="+configExt.bloxAddr)
         val fulaClient = Fulamobile.newClient(configExt)
-        val client = ConvertFulaClient(fulaClient)
+        
+        val client: land.fx.wnfslib.Datastore = if (useInMemoryStore) {
+            InMemoryDatastore()
+        } else {
+            ConvertFulaClient(fulaClient)
+        }
 
         Log.d("AppMock", "client created with id="+fulaClient.id())
 
@@ -209,11 +246,13 @@ class WNFSTest {
         val content_cp = readFile(client, config.cid, "opt/testfrompathcp.txt")
         Log.d("AppMock", "cp. content_cp="+String(content_cp))
         assert(content_cp contentEquals "Hello, World!".toByteArray())
+        Log.d("AppMock", "config cp_opt. cid="+config.cid)
 
         config = mv(client, config.cid, "root/testfrompath.txt", "root/testfrompathmv.txt") //target folder must exists
         val content_mv = readFile(client, config.cid, "root/testfrompathmv.txt")
         Log.d("AppMock", "mv. content_mv="+String(content_mv))
         assert(content_mv contentEquals "Hello, World!".toByteArray())
+        Log.d("AppMock", "config mv_root. cid="+config.cid)
 
         config = rm(client, config.cid, "root/testfrompathmv.txt")
         try {
