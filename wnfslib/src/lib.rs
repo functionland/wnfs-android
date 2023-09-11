@@ -44,21 +44,31 @@ pub mod android {
 
             let cid_jbyte_array = vec_to_jbyte_array(self.env, cid);
 
-            let data_jbyte_array = self
+            let data_jbyte_array_res = self
                 .env
                 .call_method_unchecked(
                     self.fula_client,
                     get_fn,
                     JavaType::Object(String::from("[B")),
                     &[JValue::from(cid_jbyte_array)],
-                )
-                .unwrap()
-                .l()
-                .unwrap();
+            );
+            if data_jbyte_array_res.is_ok() {    
+                let data_jbyte_array_res_l_res = data_jbyte_array_res.ok().unwrap()
+                .l();
+                if data_jbyte_array_res_l_res.is_ok() {
+                    let data_jbyte_array = data_jbyte_array_res_l_res.unwrap();
 
-            let data = jbyte_array_to_vec(self.env, data_jbyte_array.into_inner());
-            trace!("**********************get_block finished**************");
-            Ok(data)
+                    let data = jbyte_array_to_vec(self.env, data_jbyte_array.into_inner());
+                    trace!("**********************get_block finished**************");
+                    Ok(data)
+                } else {
+                    trace!("wnfsError get_block data_jbyte_array_res_l_res: {:?}", data_jbyte_array_res_l_res.err().unwrap().to_string());
+                    Ok(Vec::new())
+                }
+            } else {
+                trace!("wnfsError get_block data_jbyte_array_res: {:?}", data_jbyte_array_res.err().unwrap().to_string());
+                Ok(Vec::new())
+            }
         
         }
 
@@ -152,14 +162,18 @@ pub mod android {
         jni_fula_client: JObject,
         jni_wnfs_key: jbyteArray,
     ) -> jobject {
-        trace!("**********************createRootDirNative started**************");
+        trace!("**********************wnfsInfo createRootDirNative started**************");
         let store = JNIStore::new(env, jni_fula_client);
+        trace!("wnfsInfo Java_land_fx_wnfslib_Fs_initNative store created");
         let block_store = &mut FFIFriendlyBlockStore::new(Box::new(store));
+        trace!("wnfsInfo Java_land_fx_wnfslib_Fs_initNative block_store created");
         let wnfs_key: Vec<u8> = jbyte_array_to_vec(env, jni_wnfs_key);
+        trace!("wnfsInfo Java_land_fx_wnfslib_Fs_initNative wnfs_key created");
         let helper_res = PrivateDirectoryHelper::synced_init(block_store, wnfs_key);
-        
+        trace!("wnfsInfo Java_land_fx_wnfslib_Fs_initNative helper_res created");
         if helper_res.is_ok() {
             let (_, _, cid) = helper_res.unwrap();
+            trace!("wnfsInfo Java_land_fx_wnfslib_Fs_initNative helper_res ok");
             unsafe {
             serialize_config_result(env, None, Some(cid))
             }
