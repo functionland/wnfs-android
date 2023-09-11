@@ -17,7 +17,124 @@ import java.io.File
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.UUID
+import land.fx.wnfslib.Datastore
+import java.util.Base64
 
+import java.lang.Exception;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.logging.Logger;
+
+class InMemoryDatastore : Datastore {
+
+    private val LOGGER = Logger.getLogger("InfoLogging")
+    private val store = ConcurrentHashMap<String, ByteArray>()
+    private val executor: ExecutorService = Executors.newSingleThreadExecutor()
+    private var totalBytesPut = 0L
+    private var totalBytesGet = 0L
+
+    companion object {
+        fun hex(bytes: ByteArray): String {
+            val result = StringBuilder()
+            for (aByte in bytes) {
+                result.append(String.format("%02x", aByte))
+                // For uppercase hex digits, uncomment the line below:
+                // result.append(String.format("%02X", aByte))
+            }
+            return result.toString()
+        }
+    }
+
+    fun logByteArray(tag: String, msg: String, byteArray: ByteArray) {
+        val message = byteArray.joinToString(", ") { it.toString() }
+        Log.d(tag, msg + message)
+    }
+
+    override fun put(cid: ByteArray, data: ByteArray): ByteArray {
+        val future: Future<ByteArray> = executor.submit<ByteArray> {
+            val key = Base64.getEncoder().encodeToString(cid)
+            // Uncomment the lines below to log the input data and CID
+            // logByteArray("InMemoryDatastore", "put data=", data)
+            // logByteArray("InMemoryDatastore", "put cid=", cid)
+            store[key] = data
+            totalBytesPut += data.size
+            // Uncomment the lines below to log success
+            logByteArray("FulaClient", "put in fulaClient returned put_cid=", cid)
+            //LOGGER.info("data put successfully: ${Base64.getEncoder().encodeToString(data)}")
+            cid
+        }
+
+        return try {
+            future.get()
+        } catch (e: Exception) {
+            // TODO: Handle exception
+            null
+        } ?: byteArrayOf()
+    }
+
+    override fun get(cid: ByteArray): ByteArray {
+        val future: Future<ByteArray> = executor.submit<ByteArray> {
+            // Uncomment the line below to log the input CID
+            // logByteArray("InMemoryDatastore", "get cid=", cid)
+            val key = Base64.getEncoder().encodeToString(cid)
+            // Uncomment the lines below to log CID and key retrieval
+            //LOGGER.info("data get for cid: $key")
+            // logByteArray("InMemoryDatastore", "get key=", key.toByteArray())
+            if (!store.containsKey(key)) {
+                throw Exception("Data not found for CID: $key")
+            }
+            val data = store[key]!!
+            totalBytesGet += data.size
+            // Uncomment the lines below to log success and returned data
+            // LOGGER.info("data get successfully: ${Base64.getEncoder().encodeToString(data)}")
+            // logByteArray("InMemoryDatastore", "get returned data=", data)
+            data
+        }
+
+        return try {
+            future.get()
+        } catch (e: Exception) {
+            // TODO: Handle exception
+            null
+        } ?: byteArrayOf()
+    }
+
+    fun getTotalBytesPut(): Long {
+        return totalBytesPut
+    }
+
+    fun getTotalBytesGet(): Long {
+        return totalBytesGet
+    }
+}
+
+interface Datastore {
+    fun put(cid: ByteArray, data: ByteArray): ByteArray
+    fun get(cid: ByteArray): ByteArray
+}
+
+private fun generateLargeTestFile(path: String): File {
+    val file = File(path, "largeTestFile.txt")
+
+    // Delete the file if it already exists
+    if (file.exists()) {
+        file.delete()
+    }
+
+    file.outputStream().use { output ->
+        val buffer = ByteArray(1024)  // 1KB buffer
+        val random = java.util.Random()
+
+        // Write 70MB of random data to the file
+        repeat(200 * 1024) {  // 200MB = 200 * 1024 KB
+            random.nextBytes(buffer)
+            output.write(buffer)
+        }
+    }
+    return file
+}
 
 @RunWith(AndroidJUnit4::class)
 class WNFSTest {
@@ -35,22 +152,29 @@ class WNFSTest {
             logByteArray("FulaClient", "put in fulaClient data=", data)
             logByteArray("FulaClient", "put in fulaClient cid=", cid)
             val codec = cid[1].toLong() and 0xFF
-            Log.d("FulaClient", "put codec=" + codec)
+            Log.d("FulaClient", "put codec=" + codec.toString(16))
             val put_cid = fulaClient.put(data, codec)
             logByteArray("FulaClient", "put in fulaClient returned put_cid=", put_cid)
             return put_cid
         }
-        override fun get(cid: ByteArray): ByteArray{
-            logByteArray("FulaClient", "get in fulaClient cid=", cid)
-            val get_data = fulaClient.get(cid)
-            logByteArray("FulaClient", "get in fulaClient returned get_data=", get_data)
-            return get_data
+        override fun get(cid: ByteArray): ByteArray? {
+            try {
+                logByteArray("FulaClient", "get in fulaClient cid=", cid)
+                val get_data = fulaClient.get(cid)
+                logByteArray("FulaClient", "get in fulaClient returned get_data=", get_data)
+                return get_data
+            } catch (e: Exception) {
+                Log.e("AppMock", "An error occurred while getting data", e)
+                return null
+            }
         }
+        
     }
     @get:Rule
     val mainActivityRule = ActivityScenarioRule(MainActivity::class.java)
     @Test
     fun wnfs_overall() {
+        val useInMemoryStore = false  // Or determine this from some configurations or conditions
         initRustLogger()
         val appContext = InstrumentationRegistry
             .getInstrumentation()
@@ -68,7 +192,11 @@ class WNFSTest {
 
         Log.d("AppMock", "creating newClient with storePath="+configExt.storePath+"; bloxAddr="+configExt.bloxAddr)
         val fulaClient = Fulamobile.newClient(configExt)
-        val client = ConvertFulaClient(fulaClient)
+        val client: land.fx.wnfslib.Datastore = if (useInMemoryStore) {
+            InMemoryDatastore()
+        } else {
+            ConvertFulaClient(fulaClient)
+        }
 
         Log.d("AppMock", "client created with id="+fulaClient.id())
 
@@ -123,20 +251,24 @@ class WNFSTest {
         file.writeBytes(testContent)
 
 
-        //Create second test file for writestream
-        val testContent2 = "Hello, World2!".toByteArray()
-
-        val file2 = File(pathString, "test2.txt")
-        // create a new file
-        val isNewFileCreated2 = file2.createNewFile()
-
-        if(isNewFileCreated2){
-            Log.d("AppMock", pathString+"/test2.txt is created successfully.")
-        } else{
-            Log.d("AppMock", pathString+"/test2.txt already exists.")
+        //create 15 more files
+        for (i in 0 until 15) {
+            // Create test file for write stream with the current iterator value added to the content and file name
+            val testContent = "Hello, World${i + 2}!".toByteArray()
+            
+            val file = File(pathString, "test${i + 2}.txt")
+            // Create a new file
+            val isNewFileCreated = file.createNewFile()
+            
+            if (isNewFileCreated) {
+                Log.d("AppMock", "$pathString/test${i + 2}.txt is created successfully.")
+            } else {
+                Log.d("AppMock", "$pathString/test${i + 2}.txt already exists.")
+            }
+            //assertTrue(isNewFileCreated)
+            file.writeBytes(testContent)
         }
-        //assertTrue(isNewFileCreated)
-        file2.writeBytes(testContent2)
+        
 
 /* 
         try {
@@ -147,39 +279,38 @@ class WNFSTest {
             Log.d("AppMock", "config_err Error catched "+e.message);
         }
  */       
-        config = writeFileFromPath(client, config.cid, "/root/testfrompath.txt", pathString+"/test.txt") //target folder does not need to exist
+        config = writeFileFromPath(client, config.cid, "root/testfrompath.txt", pathString+"/test.txt") //target folder does not need to exist
         Log.d("AppMock", "config writeFileFromPath. cid="+config.cid)
-        assertNotNull("config should not be null", config)
-        assertNotNull("cid should not be null", config.cid)
-
-        config = writeFileStreamFromPath(client, config.cid, "/root/testfrompathstream.txt", pathString+"/test2.txt") //target folder does not need to exist
-        Log.d("AppMock", "config writeFileStreamFromPath. cid="+config.cid)
         assertNotNull("config should not be null", config)
         assertNotNull("cid should not be null", config.cid)
         
         val fileNames_initial: ByteArray = ls(
             client 
             , config.cid 
-            , "/root"
+            , "root"
         )
         Log.d("AppMock", "ls_initial. fileNames_initial="+String(fileNames_initial))
         // assertNull(String(fileNames_initial))
 
-        val contentfrompath = readFile(client, config.cid, "/root/testfrompath.txt")
+        val contentfrompath = readFile(client, config.cid, "root/testfrompath.txt")
         assert(contentfrompath contentEquals "Hello, World!".toByteArray())
         Log.d("AppMock", "readFile. content="+String(contentfrompath))
 
-        val contentfrompathstream = readFile(client, config.cid, "/root/testfrompathstream.txt")
-        assert(contentfrompathstream contentEquals "Hello, World2!".toByteArray())
-        Log.d("AppMock", "readFile from streamfile. content="+String(contentfrompathstream))
-
-
-        val contentfrompathtopath: String = readFileToPath(client, config.cid, "root/testfrompath.txt", pathString+"/test2.txt")
-        Log.d("AppMock", "contentfrompathtopath="+contentfrompathtopath)
-        assertNotNull("contentfrompathtopath should not be null", contentfrompathtopath)
-        val readcontent: ByteArray = File(contentfrompathtopath).readBytes()
-        assert(readcontent contentEquals "Hello, World!".toByteArray())
-        Log.d("AppMock", "readFileFromPathOfReadTo. content="+String(readcontent))
+        for (i in 0 until 15) {
+            Log.d("AppMock", "writing file ${i + 2}")
+            config = writeFileStreamFromPath(client, config.cid, "root/testfrompathstream${i + 2}.txt", "$pathString/test${i + 2}.txt") //target folder does not need to exist
+            Log.d("AppMock", "config writeFileStreamFromPath${i + 2}. cid=${config.cid}")
+            assertNotNull("config should not be null", config)
+            assertNotNull("cid should not be null", config.cid)
+        
+            Log.d("AppMock", "reading file ${i + 2}")
+            val contentstreamfrompathtopath: String = readFilestreamToPath(client, config.cid, "root/testfrompathstream${i + 2}.txt", "$pathString/teststream${i + 2}.txt")
+            Log.d("AppMock", "contentstreamfrompathtopath${i + 2}=$contentstreamfrompathtopath")
+            assertNotNull("contentstreamfrompathtopath${i + 2} should not be null", contentstreamfrompathtopath)
+            val readcontentstream: ByteArray = File(contentstreamfrompathtopath).readBytes()
+            assert(readcontentstream contentEquals "Hello, World${i + 2}!".toByteArray())
+            Log.d("AppMock", "readFileFromPathOfReadstreamTo. content=${String(readcontentstream)}")
+        }
 
         val contentstreamfrompathtopath: String = readFilestreamToPath(client, config.cid, "root/testfrompath.txt", pathString+"/teststream.txt")
         Log.d("AppMock", "contentstreamfrompathtopath="+contentstreamfrompathtopath)
@@ -236,7 +367,24 @@ class WNFSTest {
         assert(content contentEquals "Hello, World!".toByteArray())
         Log.d("AppMock", "readFile. content="+String(content))
 
-        Log.d("AppMock", "All tests before reload passed")
+        Log.d("AppMock", "****************** Teting large file write and read *******************")
+        Log.d("AppMock", "config passed to largefile. cid="+config.cid)
+        val file_large = generateLargeTestFile(pathString)
+        Log.d("AppMock", "Large file created");
+        config = writeFileStreamFromPath(client, config.cid, "root/largeTestFile.txt", pathString+"/largeTestFile.txt") //target folder does not need to exist
+        Log.d("AppMock", "config writeFileStreamFromPath for large file. cid="+config.cid)
+        assertNotNull("config should not be null for large file", config)
+        assertNotNull("cid should not be null for large file", config.cid)
+
+        val largefilecontentstreamfrompathtopath: String = readFilestreamToPath(client, config.cid, "root/largeTestFile.txt", pathString+"/largeTestFileReadStream.txt")
+        assertNotNull("contentstreamfrompathtopath for large file should not be null", largefilecontentstreamfrompathtopath)
+        val largefile = File(largefilecontentstreamfrompathtopath)
+
+        val fileSizeInBytes = largefile.length()
+        val originalfileSizeInBytes = file_large.length()
+        assertEquals(fileSizeInBytes, originalfileSizeInBytes)
+
+        Log.d("AppMock", "*************** All tests before reload passed *********************")
 
         val fileNames_before_reloaded: ByteArray = ls(client, config.cid, "root")
         Log.d("AppMock", "filenames_before_reloaded="+String(fileNames_before_reloaded))
@@ -254,14 +402,39 @@ class WNFSTest {
         Log.d("AppMock", "readFile. content="+String(content_reloaded))
         assert(content_reloaded contentEquals "Hello, World!".toByteArray())
 
-        val contentfrompathtopath_reloaded: String = readFileToPath(client, config.cid, "root/test.txt", pathString+"/test2.txt")
+        val contentfrompathtopath_reloaded: String = readFileToPath(client, config.cid, "root/test.txt", pathString+"/testreload.txt")
         Log.d("AppMock", "contentfrompathtopath_reloaded="+contentfrompathtopath_reloaded)
         assertNotNull("contentfrompathtopath_reloaded should not be null", contentfrompathtopath_reloaded)
         val readcontent_reloaded: ByteArray = File(contentfrompathtopath_reloaded).readBytes()
-        assert(readcontent_reloaded contentEquals "Hello, World!".toByteArray())
         Log.d("AppMock", "readFileFromPathOfReadTo. content="+String(readcontent_reloaded))
+        assert(readcontent_reloaded contentEquals "Hello, World!".toByteArray())
 
         Log.d("AppMock", "All tests after reload is passed.")
+
+
+        // Cleanup phase to delete all generated files
+        for (i in 0 until 15) {
+            val fileToDelete = File("$pathString/test${i + 2}.txt")
+            if (fileToDelete.exists()) {
+                val deletionSuccess = fileToDelete.delete()
+                if (deletionSuccess) {
+                    Log.d("AppMock", "File test${i + 2}.txt deleted successfully.")
+                } else {
+                    Log.d("AppMock", "Failed to delete file test${i + 2}.txt.")
+                }
+            }
+
+            val streamFileToDelete = File("$pathString/teststream${i + 2}.txt")
+            if (streamFileToDelete.exists()) {
+                val deletionSuccess = streamFileToDelete.delete()
+                if (deletionSuccess) {
+                    Log.d("AppMock", "File teststream${i + 2}.txt deleted successfully.")
+                } else {
+                    Log.d("AppMock", "Failed to delete file teststream${i + 2}.txt.")
+                }
+            }
+        }
+        Log.d("AppMock", "Clean up done.")
 
     }
 }
