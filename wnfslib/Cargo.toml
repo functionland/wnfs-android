@@ -3,9 +3,6 @@ name = "wnfslib-android"
 version = "1.8.1"
 edition = "2021"
 
-# [workspace]
-# members = ["jvm"]
-
 [lib]
 name = "wnfslib"
 crate-type = ["cdylib", "staticlib"]
@@ -33,7 +30,7 @@ libc = "0.2.139"
 jni = { version = "0.19.0" }
 android_logger = "0.11.0"
 # comment this while debbuging using vscode+rust-plugin.
-# ndk = "0.6.0"
+ndk = "0.6.0"
 
 [dev-dependencies]
 jvm = {path = "jvm"}
