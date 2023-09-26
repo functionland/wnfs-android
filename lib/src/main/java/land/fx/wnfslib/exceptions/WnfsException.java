@@ -11,6 +11,6 @@ public final class WnfsException extends Exception
     // Constructor that accepts a message
     public WnfsException(String func ,String reason)
     {
-        super(String.format("An Error Occured in Fs.%s: %s", func, reason));
+        super(String.format("An Error Occured in WNFS.%s: %s", func, reason));
     }
 }

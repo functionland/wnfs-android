@@ -8,11 +8,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.json.JSONObject;
 import org.json.JSONArray;
 import land.fx.wnfslib.result.*;
 import land.fx.wnfslib.*;
 import land.fx.wnfslib.exceptions.WnfsException;
+
 
 public final class Fs {
 
@@ -42,229 +46,306 @@ public final class Fs {
     
     private static native BytesResult readFileNative(Datastore datastore, String cid, String path);
 
+    private static native String putNative(Datastore datastore, byte[] key, byte[] value);
+
+    private static native String getNative(Datastore datastore, byte[] key);
+
+    private static final ExecutorService executor = Executors.newSingleThreadExecutor();
 
 
     @NonNull
     public static Config init(Datastore datastore, byte[] wnfsKey) throws Exception {
-        try {
-            ConfigResult res = initNative(datastore, wnfsKey);
-            if(res != null && res.ok()) {
-                return res.getResult();
-            } else {
-                throw new WnfsException("Fs.init", res.getReason());
+        Future<Config> future = executor.submit(() -> {
+            try {
+                ConfigResult res = initNative(datastore, wnfsKey);
+                if (res != null && res.ok()) {
+                    return res.getResult();
+                } else {
+                    throw new WnfsException("Fs.init", res.getReason());
+                }
+            } catch (Exception e) {
+                throw new Exception(e.getMessage());
             }
-        }
-        catch(Exception e) {
-            throw new Exception(e.getMessage());
-        }
+        });
+    
+        return future.get();
     }
 
     @NonNull
     public static void loadWithWNFSKey(Datastore datastore, byte[] wnfsKey, String cid) throws Exception {
-        try {
-            Result res = loadWithWNFSKeyNative(datastore, wnfsKey, cid);
-            if(res == null || !res.ok()) {
-                throw new WnfsException("Fs.loadWithWNFSKey", res.getReason());
+        Future<Void> future = executor.submit(() -> {
+            try {
+                Result res = loadWithWNFSKeyNative(datastore, wnfsKey, cid);
+                if(res == null || !res.ok()) {
+                    throw new WnfsException("Fs.loadWithWNFSKey for cid="+cid, res.getReason());
+                }
+                return null;
             }
-        }
-        catch(Exception e) {
-            throw new Exception(e.getMessage());
-        }
+            catch(Exception e) {
+                throw new Exception(e.getMessage());
+            }
+        });
+        
+        future.get();
     }
 
     @NonNull
     public static Config writeFileFromPath(Datastore datastore, String cid, String path, String filename) throws Exception {
-        try {
-            ConfigResult res = writeFileFromPathNative(datastore, cid, path, filename);
-            if(res != null && res.ok()) {
-                return res.getResult();
-            } else {
-                throw new WnfsException("Fs.writeFileFromPath", res.getReason());
+        Future<Config> future = executor.submit(() -> {
+            try {
+                ConfigResult res = writeFileFromPathNative(datastore, cid, path, filename);
+                if(res != null && res.ok()) {
+                    return res.getResult();
+                } else {
+                    throw new WnfsException("Fs.writeFileFromPath for cid="+cid, res.getReason());
+                }
+            } 
+            catch(Exception e) {
+                throw new Exception(e.getMessage());
             }
-        } 
-        catch(Exception e) {
-            throw new Exception(e.getMessage());
-        }
+        });
+            
+        return future.get();
     }
 
     @NonNull
     public static Config writeFileStreamFromPath(Datastore datastore, String cid, String path, String filename) throws Exception {
-        try {
-            ConfigResult res = writeFileStreamFromPathNative(datastore, cid, path, filename);
-            if(res != null && res.ok()) {
-                return res.getResult();
-            } else {
-                throw new WnfsException("Fs.writeFileStreamFromPath", res.getReason());
+        Future<Config> future = executor.submit(() -> {
+            try {
+                ConfigResult res = writeFileStreamFromPathNative(datastore, cid, path, filename);
+                if(res != null && res.ok()) {
+                    return res.getResult();
+                } else {
+                    throw new WnfsException("Fs.writeFileStreamFromPath for cid="+cid, res.getReason());
+                }
+            } 
+            catch(Exception e) {
+                throw new Exception(e.getMessage());
             }
-        } 
-        catch(Exception e) {
-            throw new Exception(e.getMessage());
-        }
+        });
+                
+        return future.get();
     }
 
     @NonNull
     public static Config writeFile(Datastore datastore, String cid, String path, byte[] content) throws Exception {
-        try {
-            ConfigResult res = writeFileNative(datastore, cid, path, content);
-            if(res != null && res.ok()) {
-                return res.getResult();
-            } else {
-                throw new WnfsException("Fs.writeFile", res.getReason());
+        Future<Config> future = executor.submit(() -> {
+            try {
+                ConfigResult res = writeFileNative(datastore, cid, path, content);
+                if(res != null && res.ok()) {
+                    return res.getResult();
+                } else {
+                    throw new WnfsException("Fs.writeFile for cid="+cid, res.getReason());
+                }
+            } 
+            catch(Exception e) {
+                throw new Exception(e.getMessage());
             }
-        } 
-        catch(Exception e) {
-            throw new Exception(e.getMessage());
-        }
+        });
+                    
+        return future.get();
     }
 
     @NonNull
     public static byte[] ls(Datastore datastore, String cid, String path) throws Exception {
-        try {
-            
-            Log.d("wnfs", "JSONArray is reached2");
-            BytesResult res = lsNative(datastore, cid, path);
-            Log.d("wnfs", "lsResult is reached: ");
-            if(res != null && res.ok()) {
-                return res.getResult();
-            } else {
-                throw new WnfsException("Fs.ls", res.getReason());
-            }
-            /*JSONArray output = new JSONArray();
-            byte[] rowSeparatorPattern = {33, 33, 33}; //!!!
-            byte[] itemSeparatorPattern = {63, 63, 63}; //???
-            List<byte[]> rows = split(rowSeparatorPattern, lsResult);
-            for (byte[] element : rows) {
-                JSONObject obj = new JSONObject();
-                List<byte[]> rowDetails = split(itemSeparatorPattern, element);
-                if (!rowDetails.isEmpty()) {
-                    String name = new String(rowDetails.get(0), StandardCharsets.UTF_8);
-                    if(!name.isEmpty()) {
-                        obj.put("name", name);
-                        if(rowDetails.size() >= 2) {
-                            String creation = new String(rowDetails.get(1), StandardCharsets.UTF_8);
-                            obj.put("creation", creation);
-                        } else {
-                            obj.put("creation", "");
-                        }
-                        if(rowDetails.size() >= 3) {
-                            String modification = new String(rowDetails.get(2), StandardCharsets.UTF_8);
-                            obj.put("modification", modification);
-                        } else {
-                            obj.put("modification", "");
-                        }
-                        output.put(obj);
-                    }
-                }
+        Future<byte[]> future = executor.submit(() -> {
+            try {
                 
-            }*/
-        }
-        catch(Exception e) {
-            throw new Exception(e.getMessage());
-        }
+                Log.d("wnfs", "JSONArray is reached2");
+                BytesResult res = lsNative(datastore, cid, path);
+                Log.d("wnfs", "lsResult is reached: ");
+                if(res != null && res.ok()) {
+                    return res.getResult();
+                } else {
+                    throw new WnfsException("Fs.ls for cid="+cid, res.getReason());
+                }
+                /*JSONArray output = new JSONArray();
+                byte[] rowSeparatorPattern = {33, 33, 33}; //!!!
+                byte[] itemSeparatorPattern = {63, 63, 63}; //???
+                List<byte[]> rows = split(rowSeparatorPattern, lsResult);
+                for (byte[] element : rows) {
+                    JSONObject obj = new JSONObject();
+                    List<byte[]> rowDetails = split(itemSeparatorPattern, element);
+                    if (!rowDetails.isEmpty()) {
+                        String name = new String(rowDetails.get(0), StandardCharsets.UTF_8);
+                        if(!name.isEmpty()) {
+                            obj.put("name", name);
+                            if(rowDetails.size() >= 2) {
+                                String creation = new String(rowDetails.get(1), StandardCharsets.UTF_8);
+                                obj.put("creation", creation);
+                            } else {
+                                obj.put("creation", "");
+                            }
+                            if(rowDetails.size() >= 3) {
+                                String modification = new String(rowDetails.get(2), StandardCharsets.UTF_8);
+                                obj.put("modification", modification);
+                            } else {
+                                obj.put("modification", "");
+                            }
+                            output.put(obj);
+                        }
+                    }
+                    
+                }*/
+            }
+            catch(Exception e) {
+                throw new Exception(e.getMessage());
+            }
+        });
+                        
+        return future.get();
     }
 
     @NonNull
     public static Config mkdir(Datastore datastore, String cid, String path) throws Exception {
-        try {
-            ConfigResult res = mkdirNative(datastore, cid, path);
-            if(res != null && res.ok()) {
-                return res.getResult();
-            } else {
-                throw new WnfsException("Fs.mkdir", res.getReason());
+        Future<Config> future = executor.submit(() -> {
+            try {
+                ConfigResult res = mkdirNative(datastore, cid, path);
+                if(res != null && res.ok()) {
+                    return res.getResult();
+                } else {
+                    throw new WnfsException("Fs.mkdir for cid="+cid, res.getReason());
+                }
+            } 
+            catch(Exception e) {
+                throw new Exception(e.getMessage());
             }
-        } 
-        catch(Exception e) {
-            throw new Exception(e.getMessage());
-        }
+        });
+                            
+        return future.get();
     }
 
     @NonNull
     public static Config rm(Datastore datastore, String cid, String path) throws Exception {
-        try {
-            ConfigResult res = rmNative(datastore, cid, path);
-            if(res != null && res.ok()) {
-                return res.getResult();
-            } else {
-                throw new WnfsException("Fs.rm", res.getReason());
+        Future<Config> future = executor.submit(() -> {
+            try {
+                ConfigResult res = rmNative(datastore, cid, path);
+                if(res != null && res.ok()) {
+                    return res.getResult();
+                } else {
+                    throw new WnfsException("Fs.rm for cid="+cid, res.getReason());
+                }
+            } 
+            catch(Exception e) {
+                throw new Exception(e.getMessage());
             }
-        } 
-        catch(Exception e) {
-            throw new Exception(e.getMessage());
-        }
+        });
+                                
+        return future.get();
     }
 
     @NonNull
     public static Config mv(Datastore datastore, String cid, String sourcePath, String targetPath) throws Exception {
-        try {
-            ConfigResult res = mvNative(datastore, cid, sourcePath, targetPath);
-            if(res != null && res.ok()) {
-                return res.getResult();
-            } else {
-                throw new WnfsException("Fs.mv", res.getReason());
+        Future<Config> future = executor.submit(() -> {
+            try {
+                ConfigResult res = mvNative(datastore, cid, sourcePath, targetPath);
+                if(res != null && res.ok()) {
+                    return res.getResult();
+                } else {
+                    throw new WnfsException("Fs.mv for cid="+cid, res.getReason());
+                }
+            } 
+            catch(Exception e) {
+                throw new Exception(e.getMessage());
             }
-        } 
-        catch(Exception e) {
-            throw new Exception(e.getMessage());
-        }
+        });
+                                    
+        return future.get();
     }
 
     @NonNull
     public static Config cp(Datastore datastore, String cid, String sourcePath, String targetPath) throws Exception {
-        try {
-            ConfigResult res = cpNative(datastore, cid, sourcePath, targetPath);
-            if(res != null && res.ok()) {
-                return res.getResult();
-            } else {
-                throw new WnfsException("Fs.cp", res.getReason());
+        Future<Config> future = executor.submit(() -> {
+            try {
+                ConfigResult res = cpNative(datastore, cid, sourcePath, targetPath);
+                if(res != null && res.ok()) {
+                    return res.getResult();
+                } else {
+                    throw new WnfsException("Fs.cp for cid="+cid, res.getReason());
+                }
+            } 
+            catch(Exception e) {
+                throw new Exception(e.getMessage());
             }
-        } 
-        catch(Exception e) {
-            throw new Exception(e.getMessage());
-        }
+        });
+                                        
+        return future.get();
     }
 
     @NonNull
     public static String readFileToPath(Datastore datastore, String cid, String path, String filename) throws Exception {
-        try{
-            StringResult res = readFileToPathNative(datastore, cid, path, filename);
-            if(res != null && res.ok()) {
-                return res.getResult();
-            } else {
-                throw new WnfsException("Fs.readFileToPathNative", res.getReason());
+        Future<String> future = executor.submit(() -> {
+            try{
+                StringResult res = readFileToPathNative(datastore, cid, path, filename);
+                if(res != null && res.ok()) {
+                    return res.getResult();
+                } else {
+                    throw new WnfsException("Fs.readFileToPathNative for cid="+cid, res.getReason());
+                }
             }
-        }
-        catch(Exception e) {
-            throw new Exception(e.getMessage());
-        }
+            catch(Exception e) {
+                throw new Exception(e.getMessage());
+            }
+        });
+                                            
+        return future.get();
     }
 
     @NonNull
     public static String readFilestreamToPath(Datastore datastore, String cid, String path, String filename) throws Exception {
-        try{
-            StringResult res = readFilestreamToPathNative(datastore, cid, path, filename);
-            if(res != null && res.ok()) {
-                return res.getResult();
-            } else {
-                throw new WnfsException("Fs.readFilestreamToPathNative", res.getReason());
+        Future<String> future = executor.submit(() -> {
+            try{
+                StringResult res = readFilestreamToPathNative(datastore, cid, path, filename);
+                if(res != null && res.ok()) {
+                    return res.getResult();
+                } else {
+                    throw new WnfsException("Fs.readFilestreamToPathNative for cid="+cid, res.getReason());
+                }
             }
-        }
-        catch(Exception e) {
-            throw new Exception(e.getMessage());
-        }
+            catch(Exception e) {
+                throw new Exception(e.getMessage());
+            }
+        });
+                                                
+        return future.get();
     }
 
     public static byte[] readFile(Datastore datastore, String cid, String path) throws Exception {
-        try{
-            BytesResult res = readFileNative(datastore, cid, path);
-            if(res != null && res.ok()) {
-                return res.getResult();
-            } else {
-                throw new WnfsException("Fs.readFileNative", res.getReason());
+        Future<byte[]> future = executor.submit(() -> {
+            try{
+                BytesResult res = readFileNative(datastore, cid, path);
+                if(res != null && res.ok()) {
+                    return res.getResult();
+                } else {
+                    throw new WnfsException("Fs.readFileNative for cid="+cid, res.getReason());
+                }
             }
-        }
-        catch(Exception e) {
-            throw new Exception(e.getMessage());
-        }
+            catch(Exception e) {
+                throw new Exception(e.getMessage());
+            }
+        });
+                                                    
+        return future.get();
+    }
+
+    @NonNull
+    public static void put(Datastore datastore, byte[] key, byte[] value) throws Exception {
+            try {
+                putNative(datastore, key, value);
+            } 
+            catch(Exception e) {
+                throw new Exception(e.getMessage());
+            }
+    }
+
+    @NonNull
+    public static void get(Datastore datastore, byte[] key) throws Exception {
+            try {
+                getNative(datastore, key);
+            } 
+            catch(Exception e) {
+                throw new Exception(e.getMessage());
+            }
     }
 
     public static native void initRustLogger();
