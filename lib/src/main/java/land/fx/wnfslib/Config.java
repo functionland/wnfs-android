@@ -1,7 +1,5 @@
 package land.fx.wnfslib;
 
-import androidx.annotation.NonNull;
-
 public final class Config {
     private final String cid;
 

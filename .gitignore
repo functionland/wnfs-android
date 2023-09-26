@@ -17,3 +17,4 @@ target
 .vscode
 tmp
 wnfslib/Cargo.lock
+wnfslib/datastore

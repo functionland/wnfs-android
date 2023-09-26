@@ -1,11 +1,13 @@
 package land.fx.app
 
 import android.util.Log
+import android.util.Base64
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import fulamobile.Fulamobile
 import land.fx.wnfslib.Fs.*
+import land.fx.wnfslib.InMemoryDatastore
 import land.fx.wnfslib.Config
 import land.fx.wnfslib.result.*
 import land.fx.wnfslib.exceptions.*
@@ -142,7 +144,11 @@ class WNFSTest {
         val message = byteArray.joinToString(", ") { it.toString() }
         Log.d(tag, msg + message)
     }
+
     class ConvertFulaClient(private val fulaClient: fulamobile.Client): land.fx.wnfslib.Datastore{
+        private var totalBytesPut = 0L // Keep track of the total bytes written
+        private var totalBytesGet = 0L // Keep track of the total bytes got
+
         fun logByteArray(tag: String, msg: String, byteArray: ByteArray) {
             val message = byteArray.joinToString(", ") { it.toString() }
             Log.d(tag, msg + message)
@@ -172,6 +178,22 @@ class WNFSTest {
     }
     @get:Rule
     val mainActivityRule = ActivityScenarioRule(MainActivity::class.java)
+
+    private fun generateLargeTestFile(path: String): File {
+        val file = File(path, "largeTestFile2.txt")
+        file.outputStream().use { output ->
+            val buffer = ByteArray(1024)  // 1KB buffer
+            val random = java.util.Random()
+    
+            // Write 1GB of random data to the file
+            repeat(58_576) {  // 1GB = 1024 * 1024 KB
+                random.nextBytes(buffer)
+                output.write(buffer)
+            }
+        }
+        return file
+    }
+
     @Test
     fun wnfs_overall() {
         val useInMemoryStore = false  // Or determine this from some configurations or conditions
@@ -200,7 +222,7 @@ class WNFSTest {
 
         Log.d("AppMock", "client created with id="+fulaClient.id())
 
-        val keyPhrase = ("test").toByteArray(StandardCharsets.UTF_8)
+        val keyPhrase = ("test22").toByteArray(StandardCharsets.UTF_8)
         val digest: MessageDigest = MessageDigest.getInstance("SHA-256");
         val wnfsKey: ByteArray = digest.digest(keyPhrase);
         
@@ -227,12 +249,12 @@ class WNFSTest {
             val fileNames_initial: ByteArray = ls(
                 client 
                 , config.cid 
-                , "/" + UUID.randomUUID().toString()
+                , UUID.randomUUID().toString()
             )
             Log.d("AppMock", "ls_initial. fileNames_initial="+String(fileNames_initial))
         }  catch (e: Exception) {
             val contains = e.message?.contains("find", true)
-            Log.d("AppMock", "ls_initial. error="+e.message)
+            Log.d("AppMock", "ls_initial_error. error="+e.message)
             assertEquals(contains, true)
         }
 
