@@ -89,4 +89,4 @@ Please note the following might not be done in order:
 - [x] add error catching
 - [x] add metadata to ls and make it array
 - [x] Improve read function to use a stream. ( :100: v1 Release here )
-- [ ] remove dependancy to custom version of wnfs
+- [x] remove dependancy to custom version of wnfs
