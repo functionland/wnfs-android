@@ -79,3 +79,11 @@ publishing {
 repositories {
     mavenCentral()
 }
+
+// Workaround for corrupted android-35 platform on GitHub Actions runners
+// This library has no Android resources, so resource verification can be skipped
+tasks.whenTaskAdded { task ->
+    if (task.name == 'verifyReleaseResources') {
+        task.enabled = false
+    }
+}
