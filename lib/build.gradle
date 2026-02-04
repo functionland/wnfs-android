@@ -10,7 +10,7 @@ def verDetails = versionDetails()
 version = "${scmVersion.version}-${verDetails.gitHash}"
 
 android {
-    compileSdkVersion 35
+    compileSdkVersion 34
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -18,7 +18,7 @@ android {
 
     defaultConfig {
         minSdkVersion 26
-        targetSdkVersion 35
+        targetSdkVersion 34
     }
 
     buildTypes {
