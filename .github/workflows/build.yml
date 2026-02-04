@@ -19,6 +19,9 @@ jobs:
 
     - name: Install SDK components
       run: |
+        # Remove potentially corrupted pre-installed android-35
+        rm -rf $ANDROID_HOME/platforms/android-35
+        # Reinstall fresh copies
         sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
 
     - name: Set up NDK
