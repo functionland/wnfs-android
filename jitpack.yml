@@ -2,4 +2,4 @@ before_install:
   - git lfs pull
 install:
   - FILE="-Dfile=mobile.aar"
-  - mvn install:install-file $FILE -DgroupId=com.github.functionland -DartifactId=wnfs-android -Dversion=1.8.5 -Dpackaging=aar -DgeneratePom=true
+  - mvn install:install-file $FILE -DgroupId=com.github.functionland -DartifactId=wnfs-android -Dversion=1.8.6 -Dpackaging=aar -DgeneratePom=true
