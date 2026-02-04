@@ -34,6 +34,9 @@ jobs:
         echo "ndk.dir=$NDK_PATH" >> local.properties
         echo "sdk.dir=$ANDROID_HOME" >> local.properties
 
+        # Add toolchain to PATH so symlinked tools are found
+        echo "$TOOLCHAIN" >> $GITHUB_PATH
+
         # Create symlinks for missing binutils (OpenSSL build expects these)
         ln -sf "$TOOLCHAIN/llvm-ar" "$TOOLCHAIN/arm-linux-androideabi-ar"
         ln -sf "$TOOLCHAIN/llvm-ar" "$TOOLCHAIN/aarch64-linux-android-ar"
