@@ -1,9 +1,12 @@
-name: Build the lib
+name: Build and Release
 
 on:
   workflow_dispatch:
-  release:
-    types: [published]
+    inputs:
+      version:
+        description: 'Version tag (e.g., v1.8.8)'
+        required: true
+        type: string
 
 env:
   CARGO_TERM_COLOR: always
@@ -90,44 +93,26 @@ jobs:
         cp ./lib/build/outputs/aar/lib-release.aar release-artifacts/mobile.aar
         cp ./lib/build/libs/*-sources.jar release-artifacts/mobile-sources.jar
 
-    - name: Upload Release AAR
-      uses: actions/upload-artifact@v4
-      with:
-        name: release-lib
-        path: release-artifacts/mobile.aar
-
-    - name: Upload Sources JAR
-      uses: actions/upload-artifact@v4
-      with:
-        name: release-sources
-        path: release-artifacts/mobile-sources.jar
-
-    - name: Attach artifacts to Release
-      if: github.event_name == 'release'
-      uses: softprops/action-gh-release@v2
-      with:
-        files: |
-          release-artifacts/mobile.aar
-          release-artifacts/mobile-sources.jar
-
     - name: Commit AAR to repo for JitPack
-      if: github.event_name == 'release'
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git lfs install
-
-        # Switch to main branch
-        git checkout main
 
         # Copy AAR to repo root
         cp release-artifacts/mobile.aar mobile.aar
         git add mobile.aar
 
         # Commit and push
-        git diff --cached --quiet && echo "No changes to commit" || git commit -m "Update built AAR for JitPack - ${{ github.ref_name }} [skip ci]"
+        git diff --cached --quiet && echo "No changes to commit" || git commit -m "Update built AAR for JitPack - ${{ inputs.version }} [skip ci]"
         git push origin main
 
-        # Update the release tag to include the AAR
-        git tag -f ${{ github.ref_name }}
-        git push origin ${{ github.ref_name }} --force
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ inputs.version }}
+        name: ${{ inputs.version }}
+        files: |
+          release-artifacts/mobile.aar
+          release-artifacts/mobile-sources.jar
+        generate_release_notes: true
