@@ -34,15 +34,21 @@ jobs:
         echo "ndk.dir=$NDK_PATH" >> local.properties
         echo "sdk.dir=$ANDROID_HOME" >> local.properties
 
-        # Set AR/RANLIB for each Android target to use llvm tools
+        # Create symlinks for missing binutils (OpenSSL build expects these)
+        ln -sf "$TOOLCHAIN/llvm-ar" "$TOOLCHAIN/arm-linux-androideabi-ar"
+        ln -sf "$TOOLCHAIN/llvm-ar" "$TOOLCHAIN/aarch64-linux-android-ar"
+        ln -sf "$TOOLCHAIN/llvm-ar" "$TOOLCHAIN/i686-linux-android-ar"
+        ln -sf "$TOOLCHAIN/llvm-ar" "$TOOLCHAIN/x86_64-linux-android-ar"
+        ln -sf "$TOOLCHAIN/llvm-ranlib" "$TOOLCHAIN/arm-linux-androideabi-ranlib"
+        ln -sf "$TOOLCHAIN/llvm-ranlib" "$TOOLCHAIN/aarch64-linux-android-ranlib"
+        ln -sf "$TOOLCHAIN/llvm-ranlib" "$TOOLCHAIN/i686-linux-android-ranlib"
+        ln -sf "$TOOLCHAIN/llvm-ranlib" "$TOOLCHAIN/x86_64-linux-android-ranlib"
+
+        # Also set env vars for cc-rs crate
         echo "AR_aarch64_linux_android=$TOOLCHAIN/llvm-ar" >> $GITHUB_ENV
         echo "AR_armv7_linux_androideabi=$TOOLCHAIN/llvm-ar" >> $GITHUB_ENV
         echo "AR_x86_64_linux_android=$TOOLCHAIN/llvm-ar" >> $GITHUB_ENV
         echo "AR_i686_linux_android=$TOOLCHAIN/llvm-ar" >> $GITHUB_ENV
-        echo "RANLIB_aarch64_linux_android=$TOOLCHAIN/llvm-ranlib" >> $GITHUB_ENV
-        echo "RANLIB_armv7_linux_androideabi=$TOOLCHAIN/llvm-ranlib" >> $GITHUB_ENV
-        echo "RANLIB_x86_64_linux_android=$TOOLCHAIN/llvm-ranlib" >> $GITHUB_ENV
-        echo "RANLIB_i686_linux_android=$TOOLCHAIN/llvm-ranlib" >> $GITHUB_ENV
 
     - name: Set up JDK 17
       uses: actions/setup-java@v4
