@@ -1,16 +1,6 @@
-jdk:
-  - openjdk17
-
 before_install:
   - git lfs pull
-  - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-  - source $HOME/.cargo/env
-  - rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android
-  - echo "ndk.dir=$ANDROID_NDK_HOME" >> local.properties
-  - echo "sdk.dir=$ANDROID_HOME" >> local.properties
 
 install:
-  - source $HOME/.cargo/env
-  - ./gradlew lib:assembleRelease
-  - FILE="-Dfile=lib/build/outputs/aar/lib-release.aar"
-  - mvn install:install-file $FILE -DgroupId=com.github.functionland -DartifactId=wnfs-android -Dversion=1.8.7 -Dpackaging=aar -DgeneratePom=true
+  - FILE="-Dfile=mobile.aar"
+  - mvn install:install-file $FILE -DgroupId=com.github.functionland -DartifactId=wnfs-android -Dversion=1.8.4 -Dpackaging=aar -DgeneratePom=true

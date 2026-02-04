@@ -2,8 +2,13 @@ name: Build the lib
 
 on:
   workflow_dispatch:
-  release:
-    types: [published]
+  push:
+    branches: [main]
+    paths:
+      - 'wnfslib/**'
+      - 'lib/**'
+      - 'build.gradle'
+      - '.github/workflows/build.yml'
 
 env:
   CARGO_TERM_COLOR: always
@@ -100,10 +105,12 @@ jobs:
         name: release-sources
         path: release-artifacts/mobile-sources.jar
 
-    - name: Attach artifacts to Release
-      if: github.event_name == 'release'
-      uses: softprops/action-gh-release@v2
-      with:
-        files: |
-          release-artifacts/mobile.aar
-          release-artifacts/mobile-sources.jar
+    - name: Commit AAR to repo for JitPack
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git lfs install
+        cp release-artifacts/mobile.aar mobile.aar
+        git add mobile.aar
+        git diff --cached --quiet && echo "No changes to commit" || git commit -m "Update built AAR for JitPack [skip ci]"
+        git push origin HEAD:main
