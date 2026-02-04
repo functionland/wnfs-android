@@ -71,7 +71,9 @@ jobs:
       run: rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android
 
     - name: Build
-      run: ./gradlew lib:assembleRelease lib:releaseSourcesJar
+      run: |
+        export PATH="${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
+        ./gradlew lib:assembleRelease lib:releaseSourcesJar
 
     - name: Prepare release artifacts
       run: |
