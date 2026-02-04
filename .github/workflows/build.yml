@@ -2,13 +2,8 @@ name: Build the lib
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'wnfslib/**'
-      - 'lib/**'
-      - 'build.gradle'
-      - '.github/workflows/build.yml'
+  release:
+    types: [published]
 
 env:
   CARGO_TERM_COLOR: always
@@ -18,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Set up Android SDK
       uses: android-actions/setup-android@v3
@@ -105,12 +102,32 @@ jobs:
         name: release-sources
         path: release-artifacts/mobile-sources.jar
 
+    - name: Attach artifacts to Release
+      if: github.event_name == 'release'
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          release-artifacts/mobile.aar
+          release-artifacts/mobile-sources.jar
+
     - name: Commit AAR to repo for JitPack
+      if: github.event_name == 'release'
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git lfs install
+
+        # Switch to main branch
+        git checkout main
+
+        # Copy AAR to repo root
         cp release-artifacts/mobile.aar mobile.aar
         git add mobile.aar
-        git diff --cached --quiet && echo "No changes to commit" || git commit -m "Update built AAR for JitPack [skip ci]"
-        git push origin HEAD:main
+
+        # Commit and push
+        git diff --cached --quiet && echo "No changes to commit" || git commit -m "Update built AAR for JitPack - ${{ github.ref_name }} [skip ci]"
+        git push origin main
+
+        # Update the release tag to include the AAR
+        git tag -f ${{ github.ref_name }}
+        git push origin ${{ github.ref_name }} --force
